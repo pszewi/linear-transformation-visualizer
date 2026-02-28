@@ -42,6 +42,26 @@ const gui3dModel = {
 let viz2d: Visualizer2D | null = null;
 let viz3d: Visualizer3D | null = null;
 
+// ─── Matrix display ───────────────────────────────────────────────────────────
+function updateMatrixDisplay() {
+  const el = document.getElementById('matrix-visual')!;
+  const mat = mode === '2D' ? mat2 : mat3;
+  const fmt = (v: number) => parseFloat(v.toFixed(2)).toFixed(2);
+
+  const rows = mat.map(row =>
+    `<div class="matrix-row">${
+      row.map(v => `<span class="matrix-cell">${fmt(v)}</span>`).join('')
+    }</div>`
+  ).join('');
+
+  el.innerHTML =
+    `<div class="matrix-wrap">` +
+    `<div class="matrix-bracket-l"></div>` +
+    `<div class="matrix-body">${rows}</div>` +
+    `<div class="matrix-bracket-r"></div>` +
+    `</div>`;
+}
+
 // ─── Derived quantities panel ─────────────────────────────────────────────────
 function updateDerived() {
   if (mode === '2D') {
@@ -65,6 +85,7 @@ function updateDerived() {
     elInv.className    = 'derived-value ' + (Math.abs(det) > 1e-10 ? 'invertible' : 'singular');
     elEig.textContent  = fmtEigen(evs);
   }
+  updateMatrixDisplay();
 }
 
 // ─── GUI management ──────────────────────────────────────────────────────────

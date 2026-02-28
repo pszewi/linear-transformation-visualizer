@@ -37,6 +37,39 @@ function makeTextSprite(text: string, color = '#ffffff'): THREE.Sprite {
   return sprite;
 }
 
+// ─── Helper — small number sprite for tick labels ────────────────────────────
+function makeTickLabel(n: number): THREE.Sprite {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  ctx.clearRect(0, 0, 128, 64);
+  ctx.font = 'bold 44px sans-serif';
+  ctx.fillStyle = '#111111';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(n), 64, 32);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(0.48, 0.24, 1);
+  return sprite;
+}
+
+// ─── Helper — tick mark segments along both axes ─────────────────────────────
+function buildTickGeometry2D(ticks: number[]): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const s = 0.1;
+  for (const t of ticks) {
+    positions.push(t, -s, 0,  t, s, 0);   // x-axis tick
+    positions.push(-s, t, 0,  s, t, 0);   // y-axis tick
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  return geo;
+}
+
+const TICK_POSITIONS_2D = [-4, -3, -2, -1, 1, 2, 3, 4];
+
 // ─── Helper — build grid line geometry ──────────────────────────────────────
 function buildGridGeometry(
   matrix: number[][],
@@ -236,6 +269,20 @@ export class Visualizer2D {
     const lx = makeTextSprite('x', '#cc2222'); lx.position.set(6.3, 0, 0);
     const ly = makeTextSprite('y', '#22aa22'); ly.position.set(0, 6.3, 0);
     this.scene.add(lx, ly);
+
+    // tick marks
+    const tickGeo = buildTickGeometry2D(TICK_POSITIONS_2D);
+    this.scene.add(new THREE.LineSegments(
+      tickGeo,
+      new THREE.LineBasicMaterial({ color: 0x444444 })
+    ));
+
+    // tick number sprites
+    for (const t of TICK_POSITIONS_2D) {
+      const xLbl = makeTickLabel(t); xLbl.position.set(t, -0.28, 0);
+      const yLbl = makeTickLabel(t); yLbl.position.set(-0.38, t, 0);
+      this.scene.add(xLbl, yLbl);
+    }
   }
 
   /** Set/clear the optional user vector. */

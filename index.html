@@ -105,6 +105,60 @@
 
     .derived-value.invertible { color: #27ae60; }
     .derived-value.singular  { color: #e74c3c; }
+
+    /* ── Matrix display ─────────────────────────────── */
+    #matrix-section {
+      padding: 12px 16px 14px;
+      border-top: 1px solid #ccc;
+      background: #fff;
+    }
+
+    #matrix-section h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+    }
+
+    .matrix-wrap {
+      display: inline-flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .matrix-bracket-l,
+    .matrix-bracket-r {
+      width: 7px;
+      border-top: 2px solid #444;
+      border-bottom: 2px solid #444;
+    }
+
+    .matrix-bracket-l { border-left: 2px solid #444; }
+    .matrix-bracket-r { border-right: 2px solid #444; }
+
+    .matrix-body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 4px 8px;
+    }
+
+    .matrix-row {
+      display: flex;
+      gap: 0;
+    }
+
+    .matrix-cell {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #1a73e8;
+      font-weight: 600;
+      min-width: 54px;
+      text-align: right;
+      padding: 1px 4px;
+    }
   </style>
 </head>
 <body>
@@ -112,6 +166,10 @@
   <div id="panel">
     <div id="panel-title">Linear Transformation Visualizer</div>
     <div id="gui-container"></div>
+    <div id="matrix-section">
+      <h3>Current Matrix</h3>
+      <div id="matrix-visual"></div>
+    </div>
     <div id="derived-panel">
       <h3>Derived Quantities</h3>
       <div class="derived-item">

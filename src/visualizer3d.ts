@@ -39,6 +39,51 @@ function makeTextSprite(text: string, color = '#ffffff'): THREE.Sprite {
   return sprite;
 }
 
+// ─── Helper — small number sprite for tick labels ────────────────────────────
+function makeTickLabel(n: number): THREE.Sprite {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  ctx.clearRect(0, 0, 128, 64);
+  ctx.font = 'bold 44px sans-serif';
+  ctx.fillStyle = '#111111';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(n), 64, 32);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(0.4, 0.2, 1);
+  return sprite;
+}
+
+// ─── Helper — single axis line geometry ──────────────────────────────────────
+const AXIS_RANGE_3D = 3;
+const TICK_POSITIONS_3D = [-2, -1, 1, 2];
+
+function buildAxisLineGeo(axis: 0 | 1 | 2, range: number): THREE.BufferGeometry {
+  const s: [number, number, number] = [0, 0, 0];
+  const e: [number, number, number] = [0, 0, 0];
+  s[axis] = -range;
+  e[axis] =  range;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute([...s, ...e], 3));
+  return geo;
+}
+
+function buildTickGeometry3D(ticks: number[]): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const s = 0.06;
+  for (const t of ticks) {
+    positions.push(t, -s, 0,  t, s, 0);   // x-axis tick (y direction)
+    positions.push(-s, t, 0,  s, t, 0);   // y-axis tick (x direction)
+    positions.push(0, -s, t,  0, s, t);   // z-axis tick (y direction)
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  return geo;
+}
+
 // ─── Arrow helper ────────────────────────────────────────────────────────────
 function makeArrow(
   from: [number,number,number],
@@ -201,10 +246,34 @@ export class Visualizer3D {
     this.e3After = makeArrow([0,0,0],[0,0,1], COL_E3_AFTER);
     this.scene.add(this.e1After, this.e2After, this.e3After);
 
-    // axis labels
-    const lx = makeTextSprite('x', '#cc2222'); lx.position.set(1.6, 0, 0);
-    const ly = makeTextSprite('y', '#22aa22'); ly.position.set(0, 1.6, 0);
-    const lz = makeTextSprite('z', '#2222cc'); lz.position.set(0, 0, 1.6);
+    // colored axis lines
+    const lineMat = (col: number) =>
+      new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.5 });
+    this.scene.add(
+      new THREE.LineSegments(buildAxisLineGeo(0, AXIS_RANGE_3D), lineMat(0xdd1111)),
+      new THREE.LineSegments(buildAxisLineGeo(1, AXIS_RANGE_3D), lineMat(0x11aa11)),
+      new THREE.LineSegments(buildAxisLineGeo(2, AXIS_RANGE_3D), lineMat(0x1111dd)),
+    );
+
+    // tick marks
+    this.scene.add(new THREE.LineSegments(
+      buildTickGeometry3D(TICK_POSITIONS_3D),
+      new THREE.LineBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.7 })
+    ));
+
+    // tick labels
+    for (const t of TICK_POSITIONS_3D) {
+      const lx2 = makeTickLabel(t); lx2.position.set(t, -0.22, 0);
+      const ly2 = makeTickLabel(t); ly2.position.set(-0.22, t, 0);
+      const lz2 = makeTickLabel(t); lz2.position.set(0, -0.22, t);
+      this.scene.add(lx2, ly2, lz2);
+    }
+
+    // axis labels at end of each axis line
+    const end = AXIS_RANGE_3D + 0.4;
+    const lx = makeTextSprite('x', '#cc2222'); lx.position.set(end, 0, 0);
+    const ly = makeTextSprite('y', '#22aa22'); ly.position.set(0, end, 0);
+    const lz = makeTextSprite('z', '#2222cc'); lz.position.set(0, 0, end);
     this.scene.add(lx, ly, lz);
   }
 
