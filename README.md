@@ -2,6 +2,10 @@
 
 A browser-based interactive tool for visualising the geometric effect of linear transformations defined by user-supplied matrices. Inspired by tools like 3Blue1Brown's *Essence of Linear Algebra* series and Desmos. 
 
+## Example image
+
+![Example image](readme_example.png)
+
 ## Features
 
 - **2D mode** — orthographic view of the xy-plane
@@ -52,6 +56,7 @@ npm run preview    # serve the production build locally
 ```
 3d-desmos/
 ├── index.html          # two-panel layout (canvas + controls)
+├── initial_prompt.md   # initial prompt for Claude Code
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
