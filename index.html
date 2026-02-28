@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linear Transformation Visualizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #1a1a2e;
+    }
+
+    #viewport {
+      flex: 1;
+      position: relative;
+      background: #0d0d1a;
+    }
+
+    #viewport canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    #panel {
+      width: 320px;
+      min-width: 260px;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      border-left: 2px solid #ccc;
+    }
+
+    #panel-title {
+      background: #2c2c54;
+      color: #fff;
+      padding: 12px 16px;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    #gui-container {
+      flex: 0 0 auto;
+    }
+
+    #gui-container .lil-gui {
+      --background-color: #f0f0f0;
+      --text-color: #333;
+      --title-background-color: #e0e0e0;
+      --widget-color: #ccc;
+      --highlight-color: #666;
+      --number-color: #1a73e8;
+      --string-color: #8b0000;
+      width: 100% !important;
+      max-width: none !important;
+    }
+
+    #derived-panel {
+      flex: 1;
+      padding: 14px 16px;
+      border-top: 1px solid #ccc;
+      background: #fafafa;
+    }
+
+    #derived-panel h3 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+    }
+
+    .derived-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
+    }
+
+    .derived-item:last-child { border-bottom: none; }
+
+    .derived-label {
+      color: #666;
+      font-weight: 500;
+    }
+
+    .derived-value {
+      color: #1a1a2e;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      text-align: right;
+      max-width: 180px;
+      word-break: break-word;
+    }
+
+    .derived-value.invertible { color: #27ae60; }
+    .derived-value.singular  { color: #e74c3c; }
+  </style>
+</head>
+<body>
+  <div id="viewport"></div>
+  <div id="panel">
+    <div id="panel-title">Linear Transformation Visualizer</div>
+    <div id="gui-container"></div>
+    <div id="derived-panel">
+      <h3>Derived Quantities</h3>
+      <div class="derived-item">
+        <span class="derived-label">Determinant</span>
+        <span class="derived-value" id="d-det">—</span>
+      </div>
+      <div class="derived-item">
+        <span class="derived-label">Rank</span>
+        <span class="derived-value" id="d-rank">—</span>
+      </div>
+      <div class="derived-item">
+        <span class="derived-label">Invertible</span>
+        <span class="derived-value" id="d-inv">—</span>
+      </div>
+      <div class="derived-item" style="flex-direction:column; align-items:flex-start; gap:4px;">
+        <span class="derived-label">Eigenvalues</span>
+        <span class="derived-value" id="d-eig" style="max-width:100%;"></span>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
