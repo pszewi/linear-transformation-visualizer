@@ -1,6 +1,6 @@
 # Linear Transformation Visualizer
 
-A browser-based interactive tool for visualising the geometric effect of linear transformations defined by user-supplied matrices. Inspired by tools like 3Blue1Brown's *Essence of Linear Algebra* series.
+A browser-based interactive tool for visualising the geometric effect of linear transformations defined by user-supplied matrices. Inspired by tools like 3Blue1Brown's *Essence of Linear Algebra* series and Desmos. 
 
 ## Features
 
