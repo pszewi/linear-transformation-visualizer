@@ -10,15 +10,15 @@ import {
 const ANIM_DURATION = 500;
 
 // ─── Colour palette ──────────────────────────────────────────────────────────
-const COL_CUBE_ORIG  = 0x444466;
-const COL_CUBE_TRANS = 0x3a7bd5;
-const COL_E1_BEFORE  = 0x884444;
-const COL_E1_AFTER   = 0xff4444;
-const COL_E2_BEFORE  = 0x448844;
-const COL_E2_AFTER   = 0x44ff44;
-const COL_E3_BEFORE  = 0x444488;
-const COL_E3_AFTER   = 0x4444ff;
-const COL_EIGEN      = 0xffee44;
+const COL_CUBE_ORIG  = 0xbbbbcc;
+const COL_CUBE_TRANS = 0x1a5fc8;
+const COL_E1_BEFORE  = 0xcc8888;
+const COL_E1_AFTER   = 0xdd1111;
+const COL_E2_BEFORE  = 0x88cc88;
+const COL_E2_AFTER   = 0x11aa11;
+const COL_E3_BEFORE  = 0x8888cc;
+const COL_E3_AFTER   = 0x1111dd;
+const COL_EIGEN      = 0xcc9900;
 const COL_USER_VEC   = 0x4488ff;
 const COL_USER_IMG   = 0x44ccff;
 
@@ -137,7 +137,7 @@ export class Visualizer3D {
   constructor(container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setClearColor(0x0d0d1a);
+    this.renderer.setClearColor(0xffffff);
 
     this.scene = new THREE.Scene();
 
@@ -202,9 +202,9 @@ export class Visualizer3D {
     this.scene.add(this.e1After, this.e2After, this.e3After);
 
     // axis labels
-    const lx = makeTextSprite('x', '#ff6666'); lx.position.set(1.6, 0, 0);
-    const ly = makeTextSprite('y', '#66ff66'); ly.position.set(0, 1.6, 0);
-    const lz = makeTextSprite('z', '#6666ff'); lz.position.set(0, 0, 1.6);
+    const lx = makeTextSprite('x', '#cc2222'); lx.position.set(1.6, 0, 0);
+    const ly = makeTextSprite('y', '#22aa22'); ly.position.set(0, 1.6, 0);
+    const lz = makeTextSprite('z', '#2222cc'); lz.position.set(0, 0, 1.6);
     this.scene.add(lx, ly, lz);
   }
 
