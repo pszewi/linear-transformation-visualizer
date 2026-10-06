@@ -5,7 +5,7 @@
   import { prefersReducedMotion } from '../lib/dom';
   import Icon from './Icon.svelte';
   import type { IconName } from './icons';
-  import { dismissToast, toasts, type ToastTone } from './toast.svelte';
+  import { dismissToast, toasts, type ToastTone } from './toastStore.svelte';
 
   const icons: Record<ToastTone, IconName> = { info: 'info', success: 'check', error: 'alert' };
   const reduced = prefersReducedMotion();
