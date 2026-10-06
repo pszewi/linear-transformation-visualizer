@@ -5,6 +5,8 @@ import 'katex/dist/katex.min.css';
 import './styles/tokens.css';
 import './styles/base.css';
 import App from './ui/App.svelte';
+// Registers the built-in decompositions (polar) with the core registry.
+import './core/linalg/decompositions';
 
 const target = document.getElementById('app');
 if (!target) throw new Error('#app not found');

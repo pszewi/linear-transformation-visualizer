@@ -58,11 +58,14 @@ The Presets panel picks it up automatically for matching shapes.
 
 1. Add a `LayerInfo` entry to `state/layers.ts` (id, label, dims, default visibility). The Layers
    panel lists it automatically.
-2. Implement `Layer` (`engine/types.ts`) in `engine/layers/YourLayer.ts`:
-   - `init`: build GPU resources
+2. Implement it in `engine/layers/<name>.ts`, usually by extending `BaseLayer`. `BaseLayer`
+   frees everything created through `own()` / `label()` and provides fat-line helpers.
+   - `build`: create the GPU resources
    - `update(frame)`: react to changes, without allocating
-   - `setVisible`
-   - `dispose`: free everything
+   - Geometry that is just _the image of fixed geometry_ should use `makeMapped`/`applyMap`, so
+     the GPU applies the map.
+   - Labels pinned to the 2D screen edge should clamp to `visibleRect2D(…, ctx.insets, …)`,
+     which keeps them out from under the inspector.
 3. Register the factory under the same id in `engine/layers/registry.ts`.
 
 ### Add a kind of scene object (polygon, mesh, plane, …)
