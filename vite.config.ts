@@ -10,6 +10,7 @@ export default defineConfig({
   },
   test: {
     include: ['tests/core/**/*.test.ts', 'tests/unit/**/*.test.ts'],
-    environment: 'node',
+    // Node globals, but Svelte runes compiled in client mode (see the file for why).
+    environment: './tests/svelte-client-env.ts',
   },
 });
