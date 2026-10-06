@@ -105,8 +105,12 @@
     document.body.classList.remove('is-scrubbing');
     const el = e.currentTarget as HTMLSpanElement;
     if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
-    if (wasScrubbing) onchange(final, 'end');
-    else if (!cancelled) void startEdit();
+    if (wasScrubbing) {
+      onchange(final, 'end');
+      // A mouse scrub is not a request for keyboard focus: keep the global digit shortcuts
+      // (2/3 switch dimension) working afterwards. Keyboard users who Tab in keep type-to-edit.
+      if (e.pointerType === 'mouse') el.blur();
+    } else if (!cancelled) void startEdit();
   }
 
   async function startEdit(initial?: string) {

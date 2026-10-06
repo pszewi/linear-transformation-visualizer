@@ -10,6 +10,7 @@
     createAutosave,
     documentFromHash,
     initialDocument,
+    saveToStorage,
     SHARE_HASH_PREFIX,
     shareUrl,
   } from '../state/persistence';
@@ -89,6 +90,7 @@
         return;
       }
       store.load(shared);
+      saveToStorage(storage, store.snapshot());
       showToast('Loaded shared scene', 'success');
     };
     addEventListener('hashchange', onHashChange);
@@ -97,6 +99,9 @@
     const onMedia = () => (narrow = media.matches);
     media.addEventListener('change', onMedia);
 
+    // The hash is dropped below, so persist a linked scene now: otherwise a reload without edits
+    // would show the older autosave (or the default) instead of what the link opened.
+    if (boot.source === 'link') saveToStorage(storage, boot.doc);
     clearShareHash();
     if (boot.source === 'link') showToast('Loaded shared scene', 'success');
     else if (boot.invalidLink) showToast('That share link is invalid', 'error');

@@ -11,6 +11,7 @@
 
   let { children, element = $bindable(), label }: Props = $props();
 
+  let content = $state<HTMLDivElement>();
   let fadeTop = $state(false);
   let fadeBottom = $state(false);
 
@@ -22,26 +23,15 @@
   }
 
   $effect(() => {
-    if (!element) return;
-    const el = element;
+    if (!element || !content) return;
+    // Observe the scroller (viewport size) and the content (sections opening/closing). A
+    // ResizeObserver fires only on real size changes and after layout, so live panel updates
+    // (e.g. KaTeX re-rendering on every drag frame) never force a synchronous layout here.
     const resize = new ResizeObserver(update);
-    resize.observe(el);
-    // Content height changes (sections opening) don't resize the scroller itself.
-    let queued = false;
-    const mutations = new MutationObserver(() => {
-      if (queued) return;
-      queued = true;
-      requestAnimationFrame(() => {
-        queued = false;
-        update();
-      });
-    });
-    mutations.observe(el, { childList: true, subtree: true });
+    resize.observe(element);
+    resize.observe(content);
     update();
-    return () => {
-      resize.disconnect();
-      mutations.disconnect();
-    };
+    return () => resize.disconnect();
   });
 </script>
 
@@ -54,7 +44,9 @@
   role="region"
   aria-label={label}
 >
-  {@render children()}
+  <div class="content" bind:this={content}>
+    {@render children()}
+  </div>
 </div>
 
 <style>
