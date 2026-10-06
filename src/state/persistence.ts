@@ -198,56 +198,26 @@ export function parseDocument(input: unknown): SceneDocument | null {
   return result.ok ? result.doc : null;
 }
 
-// ───────────────────────────── share links ─────────────────────────────
+// ───────────────────────────── scene files ─────────────────────────────
 
-export const SHARE_HASH_PREFIX = '#s=';
-/** Longest share token accepted (a full 16-vector 3D document is ~3 KB). */
-const MAX_TOKEN_LENGTH = 32_768;
+/** File extension for saved scenes (the content is plain, human-readable JSON). */
+export const SCENE_EXTENSION = 'ltv';
+/** Largest scene file accepted (a full 16-vector 3D document is ~3 KB). */
+const MAX_SCENE_BYTES = 256 * 1024;
 
-function toBase64Url(bytes: Uint8Array): string {
-  let binary = '';
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+/** Pretty-printed JSON for a scene file. */
+export function serializeScene(doc: SceneDocument): string {
+  return `${JSON.stringify(doc, null, 2)}\n`;
 }
 
-function fromBase64Url(token: string): Uint8Array | null {
-  if (!/^[A-Za-z0-9_-]*$/.test(token)) return null;
-  const b64 = token.replace(/-/g, '+').replace(/_/g, '/');
+/** Parse and validate a scene file's text; null if it is not a valid scene. */
+export function parseSceneFile(text: string): SceneDocument | null {
+  if (text.length > MAX_SCENE_BYTES) return null;
   try {
-    const binary = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4));
-    return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return parseDocument(JSON.parse(text));
   } catch {
     return null;
   }
-}
-
-/** base64url(JSON(doc)) — UTF-8 safe (labels may contain any characters). */
-export function encodeShareToken(doc: SceneDocument): string {
-  return toBase64Url(new TextEncoder().encode(JSON.stringify(doc)));
-}
-
-export function decodeShareToken(token: string): SceneDocument | null {
-  if (token.length === 0 || token.length > MAX_TOKEN_LENGTH) return null;
-  const bytes = fromBase64Url(token);
-  if (!bytes) return null;
-  try {
-    const json = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-    return parseDocument(JSON.parse(json));
-  } catch {
-    return null;
-  }
-}
-
-/** Absolute share URL for `doc`, based on `href` with any existing hash replaced. */
-export function shareUrl(doc: SceneDocument, href: string): string {
-  const base = href.split('#')[0];
-  return `${base}${SHARE_HASH_PREFIX}${encodeShareToken(doc)}`;
-}
-
-/** Document from a location hash like `#s=…`; null if absent or invalid. */
-export function documentFromHash(hash: string): SceneDocument | null {
-  if (!hash.startsWith(SHARE_HASH_PREFIX)) return null;
-  return decodeShareToken(hash.slice(SHARE_HASH_PREFIX.length));
 }
 
 // ───────────────────────────── local storage ─────────────────────────────
@@ -327,17 +297,14 @@ export function createAutosave(
 
 // ───────────────────────────── startup ─────────────────────────────
 
-export type DocumentSource = 'link' | 'storage' | 'default';
+export type DocumentSource = 'storage' | 'default';
 
-/** Startup order: share link in the hash > autosaved document > default 2D scene. */
-export function initialDocument(
-  hash: string,
-  storage: KeyValueStorage | null,
-): { doc: SceneDocument; source: DocumentSource; invalidLink: boolean } {
-  const hasLink = hash.startsWith(SHARE_HASH_PREFIX);
-  const fromLink = hasLink ? documentFromHash(hash) : null;
-  if (fromLink) return { doc: fromLink, source: 'link', invalidLink: false };
+/** Startup order: autosaved document > default 2D scene. */
+export function initialDocument(storage: KeyValueStorage | null): {
+  doc: SceneDocument;
+  source: DocumentSource;
+} {
   const stored = loadFromStorage(storage);
-  if (stored) return { doc: stored, source: 'storage', invalidLink: hasLink };
-  return { doc: defaultDocument(2), source: 'default', invalidLink: hasLink };
+  if (stored) return { doc: stored, source: 'storage' };
+  return { doc: defaultDocument(2), source: 'default' };
 }

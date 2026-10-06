@@ -30,7 +30,7 @@ test('shows the canvas, the 2D toolbar and the inspector', async ({ page }) => {
 
   await expect(page.getByRole('banner')).toBeVisible();
   await expectDim(page, 2);
-  for (const name of ['Undo', 'Redo', 'Reset camera', 'Keyboard shortcuts', 'Share']) {
+  for (const name of ['Undo', 'Redo', 'Reset camera', 'Keyboard shortcuts', 'Open scene', 'Save']) {
     await expect(toolbarButton(page, name)).toBeVisible();
   }
   await expect(toolbarButton(page, 'Undo')).toBeDisabled();

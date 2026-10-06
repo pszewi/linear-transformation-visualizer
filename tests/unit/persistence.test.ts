@@ -4,14 +4,12 @@ import type { SceneEvent } from '../../src/state/events';
 import { MAX_LABEL_LENGTH, MAX_OBJECTS } from '../../src/state/limits';
 import {
   createAutosave,
-  decodeShareToken,
-  documentFromHash,
-  encodeShareToken,
   initialDocument,
   loadFromStorage,
   parseDocument,
+  parseSceneFile,
   saveToStorage,
-  shareUrl,
+  serializeScene,
   STORAGE_KEY,
   validateDocument,
   type KeyValueStorage,
@@ -125,25 +123,18 @@ describe('parseDocument', () => {
   });
 });
 
-describe('share links', () => {
-  it('round-trips through base64url, including unicode labels', () => {
-    const token = encodeShareToken(validDoc());
-    expect(token).toMatch(/^[A-Za-z0-9_-]+$/);
-    expect(decodeShareToken(token)).toEqual(validDoc());
+describe('scene files', () => {
+  it('round-trips, including unicode labels', () => {
+    const text = serializeScene(validDoc());
+    expect(text.endsWith('\n')).toBe(true);
+    expect(parseSceneFile(text)).toEqual(validDoc());
   });
 
-  it('builds and reads #s= URLs', () => {
-    const url = shareUrl(validDoc(), 'https://example.test/app/?q=1#old');
-    expect(url.startsWith('https://example.test/app/?q=1#s=')).toBe(true);
-    expect(documentFromHash(new URL(url).hash)).toEqual(validDoc());
-  });
-
-  it('rejects garbage tokens', () => {
-    expect(decodeShareToken('')).toBeNull();
-    expect(decodeShareToken('!!!')).toBeNull();
-    expect(decodeShareToken('aGVsbG8')).toBeNull(); // "hello", not JSON
-    expect(decodeShareToken('a'.repeat(40_000))).toBeNull();
-    expect(documentFromHash('#x=abc')).toBeNull();
+  it('rejects garbage and oversized files', () => {
+    expect(parseSceneFile('')).toBeNull();
+    expect(parseSceneFile('not json')).toBeNull();
+    expect(parseSceneFile('{"version":1}')).toBeNull();
+    expect(parseSceneFile(' '.repeat(300_000) + serializeScene(validDoc()))).toBeNull();
   });
 });
 
@@ -209,17 +200,13 @@ describe('storage', () => {
 });
 
 describe('initialDocument', () => {
-  it('prefers hash, then storage, then the default 2D scene', () => {
+  it('prefers storage, then the default 2D scene', () => {
     const storage = new MemoryStorage();
     const stored = defaultDocument(3);
     saveToStorage(storage, stored);
-    const hash = `#s=${encodeShareToken(validDoc())}`;
-
-    expect(initialDocument(hash, storage)).toMatchObject({ source: 'link', doc: validDoc() });
-    expect(initialDocument('', storage)).toMatchObject({ source: 'storage', doc: stored });
-    const fallback = initialDocument('#s=broken', new MemoryStorage());
+    expect(initialDocument(storage)).toMatchObject({ source: 'storage', doc: stored });
+    const fallback = initialDocument(new MemoryStorage());
     expect(fallback.source).toBe('default');
-    expect(fallback.invalidLink).toBe(true);
     expect(fallback.doc.transforms[0].rows).toEqual([
       [1, 0],
       [0, 1],

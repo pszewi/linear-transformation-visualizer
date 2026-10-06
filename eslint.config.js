@@ -15,7 +15,16 @@ const restrict = (patterns) => ({
 });
 
 export default ts.config(
-  { ignores: ['dist/', 'node_modules/', 'test-results/', 'playwright-report/', '.claude/'] },
+  {
+    ignores: [
+      'dist/',
+      'node_modules/',
+      'test-results/',
+      'playwright-report/',
+      '.claude/',
+      'src-tauri/',
+    ],
+  },
   js.configs.recommended,
   ...ts.configs.recommended,
   ...svelte.configs.recommended,

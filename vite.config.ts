@@ -4,6 +4,9 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 export default defineConfig({
   plugins: [svelte()],
+  // Tauri runs `vite` as its dev server on a fixed port and prints its own output.
+  clearScreen: false,
+  server: { port: 5173, strictPort: true },
   build: {
     target: 'es2022',
     sourcemap: true,

@@ -2,6 +2,9 @@
 import { isTypingTarget, MOD_KEY } from '../lib/dom';
 
 export interface ShortcutActions {
+  open(): void;
+  save(): void;
+  saveAs(): void;
   undo(): void;
   redo(): void;
   setDimension(n: 2 | 3): void;
@@ -23,6 +26,9 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   {
     title: 'General',
     items: [
+      { keys: [MOD_KEY, 'O'], label: 'Open scene file' },
+      { keys: [MOD_KEY, 'S'], label: 'Save scene' },
+      { keys: ['⇧', MOD_KEY, 'S'], label: 'Save scene as…' },
       { keys: [MOD_KEY, 'Z'], label: 'Undo' },
       { keys: ['⇧', MOD_KEY, 'Z'], label: 'Redo' },
       { keys: ['2'], label: 'Switch to 2D' },
@@ -49,7 +55,12 @@ export function handleShortcut(e: KeyboardEvent, actions: ShortcutActions): bool
   const mod = e.metaKey || e.ctrlKey;
   const key = e.key.toLowerCase();
   let handled = true;
-  if (mod && !e.altKey && key === 'z') {
+  if (mod && !e.altKey && key === 'o' && !e.shiftKey) {
+    actions.open();
+  } else if (mod && !e.altKey && key === 's') {
+    if (e.shiftKey) actions.saveAs();
+    else actions.save();
+  } else if (mod && !e.altKey && key === 'z') {
     if (e.shiftKey) actions.redo();
     else actions.undo();
   } else if (mod && !e.altKey && !e.shiftKey && key === 'y') {

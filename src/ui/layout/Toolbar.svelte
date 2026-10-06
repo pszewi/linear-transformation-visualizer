@@ -10,11 +10,12 @@
   interface Props {
     store: SceneStore;
     narrow: boolean;
-    onshare: () => void;
+    onopen: () => void;
+    onsave: () => void;
     onhelp: () => void;
   }
 
-  let { store, narrow, onshare, onhelp }: Props = $props();
+  let { store, narrow, onopen, onsave, onhelp }: Props = $props();
 
   type DimValue = '2' | '3';
   const dims: SegmentOption<DimValue>[] = [
@@ -67,11 +68,14 @@
     {/if}
   </div>
 
-  {#if narrow}
-    <IconButton icon="link" label="Copy share link" onclick={onshare} />
-  {:else}
-    <Button variant="primary" size="sm" icon="link" onclick={onshare}>Share</Button>
-  {/if}
+  <div class="files">
+    <IconButton icon="folder" label="Open scene" shortcut={[MOD_KEY, 'O']} onclick={onopen} />
+    {#if narrow}
+      <IconButton icon="save" label="Save scene" shortcut={[MOD_KEY, 'S']} onclick={onsave} />
+    {:else}
+      <Button variant="primary" size="sm" icon="save" onclick={onsave}>Save</Button>
+    {/if}
+  </div>
 </header>
 
 <style>
@@ -114,7 +118,8 @@
     background: var(--color-border);
   }
 
-  .group {
+  .group,
+  .files {
     display: flex;
     align-items: center;
     gap: var(--space-0);

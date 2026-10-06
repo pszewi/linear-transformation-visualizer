@@ -5,3 +5,5 @@ test-results
 playwright-report
 *.png
 .claude
+src-tauri/target
+src-tauri/gen

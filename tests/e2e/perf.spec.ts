@@ -304,7 +304,7 @@ test.describe('layout', () => {
     await expect(sheet.getByRole('button', { name: 'Resize panel sheet' })).toBeVisible();
     await expect(page.getByRole('complementary', { name: 'Inspector' })).toHaveCount(0);
     await expect(
-      page.getByRole('banner').getByRole('button', { name: 'Copy share link' }),
+      page.getByRole('banner').getByRole('button', { name: 'Save scene' }),
     ).toBeVisible();
 
     const noHorizontalScroll = () =>

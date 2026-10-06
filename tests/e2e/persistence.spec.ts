@@ -19,81 +19,7 @@ const vectors = (page: Page) => panel(page, 'Vectors');
 const coord = (page: Page, n: number, axis: 'x' | 'y' | 'z') =>
   vectors(page).getByRole('spinbutton', { name: `v${sub(n)} ${axis}`, exact: true });
 
-async function setCoord(page: Page, n: number, axis: 'x' | 'y' | 'z', text: string) {
-  await coord(page, n, axis).click();
-  const input = vectors(page).getByRole('textbox', { name: `v${sub(n)} ${axis}`, exact: true });
-  await input.fill(text);
-  await input.press('Enter');
-  await expect(coord(page, n, axis)).toBeVisible();
-}
-
-/** Base64url of arbitrary text, as the share-link format uses. */
-const b64url = (s: string) =>
-  Buffer.from(s, 'utf8')
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-
 const storedScene = (page: Page) => page.evaluate(() => localStorage.getItem('ltv.scene'));
-
-test('share link restores the matrix and vectors in a fresh browser context', async ({
-  page,
-  context,
-  browser,
-  baseURL,
-}) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: baseURL });
-  await openApp(page);
-  await page.keyboard.press('3');
-  await expectDim(page, 3);
-  await presetButton(page, 'Defective').click();
-  await typeIntoCell(page, 3, 1, '-1/8');
-  await vectors(page).getByRole('button', { name: 'Add vector' }).click();
-  await setCoord(page, 1, 'z', '-2.5');
-  await vectors(page).getByRole('button', { name: 'Add vector' }).click();
-  await vectors(page).getByRole('button', { name: 'Hide v₂' }).click();
-
-  await toolbarButton(page, 'Share').click();
-  await expect(toasts(page)).toContainText('Share link copied to clipboard');
-  const link = await page.evaluate(() => navigator.clipboard.readText());
-  expect(link).toMatch(/^http:\/\/localhost:4173\/\?debug#s=[A-Za-z0-9_-]+$/);
-
-  const fresh = await browser.newContext();
-  try {
-    const other = await fresh.newPage();
-    const log = trackErrors(other);
-    await other.goto(link);
-    await waitForEngine(other);
-    await expect(toasts(other)).toContainText('Loaded shared scene');
-    await expectDim(other, 3);
-    await expectMatrix(other, [
-      [2, 1, 0],
-      [0, 2, 0],
-      [-0.125, 0, 2],
-    ]);
-    await expect(coord(other, 1, 'x')).toHaveAttribute('aria-valuenow', '1');
-    await expect(coord(other, 1, 'z')).toHaveAttribute('aria-valuenow', '-2.5');
-    await expect(vectors(other).getByRole('button', { name: 'Show v₂' })).toBeVisible();
-    // The share hash is dropped once loaded so a reload restores the autosave instead.
-    await expect.poll(() => other.evaluate(() => location.hash)).toBe('');
-    expectNoErrors(log);
-  } finally {
-    await fresh.close();
-  }
-});
-
-test('share without clipboard permission reports an error toast', async ({ page }) => {
-  await openApp(page);
-  await page.evaluate(() => {
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText: () => Promise.reject(new Error('denied')) },
-      configurable: true,
-    });
-  });
-  await toolbarButton(page, 'Share').click();
-  await expect(toasts(page)).toContainText('Could not access the clipboard');
-});
 
 test('autosave survives a reload (after the debounce)', async ({ page }) => {
   await openApp(page);
@@ -137,83 +63,86 @@ test('3D scene survives a reload', async ({ page }) => {
   ]);
 });
 
-for (const [what, token] of [
-  ['not base64', '%%%not-base64!!'],
-  ['base64 of non-JSON', b64url('hello world')],
-  ['valid JSON, invalid document', b64url('{"version":1,"transforms":[]}')],
-  ['an empty token', ''],
-]) {
-  test(`malformed share link (${what}) shows an error and falls back`, async ({ page }) => {
-    const log = trackErrors(page);
-    await openApp(page, `#s=${token}`);
-    await expect(toasts(page)).toContainText('That share link is invalid');
-    await expectDim(page, 2);
-    await expectMatrix(page, [
-      [1, 0],
-      [0, 1],
-    ]);
-    expectNoErrors(log);
-  });
+/** A valid 2D scene document, as written by Save. */
+const sceneDoc = (rows: number[][]) => ({
+  version: 1,
+  transforms: [{ id: 't1', label: 'A', rows }],
+  objects: [{ id: 'o1', kind: 'vector', visible: true, colorKey: 'violet', coords: [2, -1] }],
+  view: { layers: {}, interpolation: 'linear' },
+});
+
+async function openFile(page: Page, name: string, contents: string) {
+  const chooser = page.waitForEvent('filechooser');
+  await toolbarButton(page, 'Open scene').click();
+  await (
+    await chooser
+  ).setFiles({ name, mimeType: 'application/json', buffer: Buffer.from(contents) });
 }
 
-test('malformed share link falls back to the autosaved scene', async ({ page }) => {
+test('Save downloads a valid scene file', async ({ page }) => {
   await openApp(page);
-  await presetButton(page, 'Reflect x-axis').click();
-  await expect.poll(() => storedScene(page)).toContain('[0,-1]');
-  // Leave the page first: a same-document hash change would go through 'hashchange' instead.
-  await page.goto('about:blank');
-  await page.goto('/?debug#s=garbage');
-  await waitForEngine(page);
-  await expect(toasts(page)).toContainText('That share link is invalid');
+  await presetButton(page, 'Shear x').click();
   await expectMatrix(page, [
-    [1, 0],
-    [0, -1],
-  ]);
-});
-
-test('pasting a share link into the running app loads it (hashchange)', async ({ page }) => {
-  await openApp(page);
-  const doc = {
-    version: 1,
-    transforms: [{ id: 't1', label: 'A', rows: [[3, 0], [0, 0.5]] }], // prettier-ignore
-    objects: [{ id: 'v1', kind: 'vector', visible: true, coords: [1, 2], label: 'v₁' }],
-    view: { layers: {}, interpolation: 'linear' },
-  };
-  await page.evaluate((hash) => (location.hash = hash), `#s=${b64url(JSON.stringify(doc))}`);
-  await expect(toasts(page)).toContainText('Loaded shared scene');
-  await expectMatrix(page, [
-    [3, 0],
-    [0, 0.5],
-  ]);
-  await expect(coord(page, 1, 'y')).toHaveAttribute('aria-valuenow', '2');
-  await expect.poll(() => page.evaluate(() => location.hash)).toBe('');
-  // Loading a link is undoable.
-  await toolbarButton(page, 'Undo').click();
-  await expectMatrix(page, [
-    [1, 0],
+    [1, 1],
     [0, 1],
   ]);
-
-  await page.evaluate(() => (location.hash = '#s=broken'));
-  await expect(toasts(page)).toContainText('That share link is invalid');
+  const download = page.waitForEvent('download');
+  await toolbarButton(page, 'Save').click();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe('scene.ltv');
+  const doc = JSON.parse(
+    await (await file.createReadStream()).toArray().then((c) => Buffer.concat(c).toString('utf8')),
+  );
+  expect(doc.version).toBe(1);
+  expect(doc.transforms[0].rows).toEqual([
+    [1, 1],
+    [0, 1],
+  ]);
+  await expect(toasts(page)).toContainText('Saved scene.ltv');
 });
 
-test('a scene opened from a share link survives a reload', async ({ browser, baseURL }) => {
-  const doc = {
-    version: 1,
-    transforms: [{ id: 't1', label: 'A', rows: [[1, -1], [1, 1]] }], // prettier-ignore
-    objects: [],
-    view: { layers: {}, interpolation: 'linear' },
-  };
-  const context = await browser.newContext({ baseURL });
-  try {
-    const page = await context.newPage();
-    await openApp(page, `#s=${b64url(JSON.stringify(doc))}`);
-    await expectMatrix(page, doc.transforms[0].rows);
-    await page.reload();
-    await waitForEngine(page);
-    await expectMatrix(page, doc.transforms[0].rows);
-  } finally {
-    await context.close();
-  }
+test('Open restores the matrix and vectors, and survives a reload', async ({ page }) => {
+  const errors = trackErrors(page);
+  await openApp(page);
+  await openFile(page, 'rotation.ltv', JSON.stringify(sceneDoc([[0, -1], [1, 0]]))); // prettier-ignore
+  await expect(toasts(page)).toContainText('Opened rotation.ltv');
+  await expectMatrix(page, [
+    [0, -1],
+    [1, 0],
+  ]);
+  // The vector came along (the Vectors panel is collapsed by default, so check the autosave).
+  await expect.poll(() => storedScene(page)).toContain('"coords":[2,-1]');
+  await expect(page).toHaveTitle(/^rotation\.ltv — /);
+  await page.reload();
+  await waitForEngine(page);
+  await expectMatrix(page, [
+    [0, -1],
+    [1, 0],
+  ]);
+  expectNoErrors(errors);
 });
+
+test('editing after Open marks the scene as unsaved in the title', async ({ page }) => {
+  await openApp(page);
+  await openFile(page, 'a.ltv', JSON.stringify(sceneDoc([[1, 0], [0, 1]]))); // prettier-ignore
+  await expect(page).toHaveTitle(/^a\.ltv — /);
+  await presetButton(page, 'Shear x').click();
+  await expect(page).toHaveTitle(/^• a\.ltv — /);
+});
+
+for (const [what, contents] of [
+  ['not JSON', 'hello world'],
+  ['JSON, but not a scene', '{"version":1,"transforms":[]}'],
+  ['an empty file', ''],
+]) {
+  test(`opening ${what} shows an error and keeps the current scene`, async ({ page }) => {
+    await openApp(page);
+    await presetButton(page, 'Shear x').click();
+    await openFile(page, 'bad.ltv', contents);
+    await expect(toasts(page)).toContainText('bad.ltv is not a valid scene file');
+    await expectMatrix(page, [
+      [1, 1],
+      [0, 1],
+    ]);
+  });
+}

@@ -6,13 +6,19 @@
   import { onMount } from 'svelte';
   import { createEngine } from '../engine';
   import {
+    openSceneFile,
+    saveSceneFile,
+    setWindowTitle,
+    type SceneFileRef,
+  } from '../platform/files';
+  import { installAppMenu } from '../platform/menu';
+  import {
     browserStorage,
     createAutosave,
-    documentFromHash,
     initialDocument,
+    parseSceneFile,
     saveToStorage,
-    SHARE_HASH_PREFIX,
-    shareUrl,
+    serializeScene,
   } from '../state/persistence';
   import { createStore } from '../state/store.svelte';
   import Toast from './components/Toast.svelte';
@@ -28,7 +34,7 @@
   const NARROW_QUERY = '(max-width: 759px)';
 
   const storage = browserStorage();
-  const boot = initialDocument(location.hash, storage);
+  const boot = initialDocument(storage);
   const store = createStore({ initial: boot.doc });
   const engine = createEngine();
 
@@ -36,32 +42,66 @@
   let helpOpen = $state(false);
   let narrow = $state(matchMedia(NARROW_QUERY).matches);
 
-  /** Drop `#s=…` once loaded so a reload restores the autosave, not the original link. */
-  function clearShareHash() {
-    if (location.hash.startsWith(SHARE_HASH_PREFIX)) {
-      history.replaceState(null, '', location.pathname + location.search);
+  /** The scene file this session last opened or saved; null until then ("Untitled"). */
+  let file = $state<SceneFileRef | null>(null);
+  /** Unsaved changes since the last open/save. */
+  let dirty = $state(false);
+
+  $effect(() => {
+    const name = file?.name ?? 'Untitled';
+    void setWindowTitle(`${dirty ? '• ' : ''}${name} — Linear Transformation Visualizer`);
+  });
+
+  function failed(action: string, err: unknown) {
+    console.error(err);
+    showToast(`Could not ${action} the scene file`, 'error');
+  }
+
+  async function openScene() {
+    try {
+      const picked = await openSceneFile();
+      if (!picked) return;
+      const doc = parseSceneFile(picked.text);
+      if (!doc) {
+        showToast(`${picked.file.name} is not a valid scene file`, 'error');
+        return;
+      }
+      store.load(doc);
+      saveToStorage(storage, store.snapshot());
+      file = picked.file;
+      dirty = false;
+      showToast(`Opened ${picked.file.name}`, 'success');
+    } catch (err) {
+      failed('open', err);
     }
   }
 
-  async function share() {
-    const url = shareUrl(store.snapshot(), location.href);
+  async function saveScene(saveAs = false) {
     try {
-      await navigator.clipboard.writeText(url);
-      showToast('Share link copied to clipboard', 'success');
-    } catch {
-      showToast('Could not access the clipboard', 'error');
+      const saved = await saveSceneFile(serializeScene(store.snapshot()), file, saveAs);
+      if (!saved) return;
+      file = saved;
+      dirty = false;
+      showToast(`Saved ${saved.name}`, 'success');
+    } catch (err) {
+      failed('save', err);
     }
   }
+
+  const actions = {
+    open: () => void openScene(),
+    save: () => void saveScene(false),
+    saveAs: () => void saveScene(true),
+    undo: () => store.undo(),
+    redo: () => store.redo(),
+    setDimension: (n: 2 | 3) => store.setDimension(n),
+    resetCamera: () => store.resetCamera(),
+    showHelp: () => (helpOpen = true),
+  };
 
   function onkeydown(e: KeyboardEvent) {
     if (helpOpen) return;
-    handleShortcut(e, {
-      undo: () => store.undo(),
-      redo: () => store.redo(),
-      setDimension: (n) => store.setDimension(n),
-      resetCamera: () => store.resetCamera(),
-      showHelp: () => (helpOpen = true),
-    });
+    handleShortcut(e, actions);
   }
 
   onMount(() => {
@@ -72,7 +112,11 @@
     engine.dispatch({ type: 'matrix', matrix: store.matrix, animate: false });
     engine.dispatch({ type: 'view', view: doc.view });
     engine.dispatch({ type: 'objects', objects: doc.objects });
-    const unsubscribe = store.subscribe((event) => engine.dispatch(event));
+    const unsubscribe = store.subscribe((event) => {
+      engine.dispatch(event);
+      if (event.type !== 'view' && event.type !== 'resetCamera') dirty = true;
+    });
+    void installAppMenu(actions);
     const stopInsets = host.parentElement
       ? trackViewInsets(host.parentElement, host, (insets) => engine.setViewInsets(insets))
       : () => {};
@@ -81,37 +125,15 @@
     const onPageHide = () => autosave.flush();
     addEventListener('pagehide', onPageHide);
 
-    const onHashChange = () => {
-      if (!location.hash.startsWith(SHARE_HASH_PREFIX)) return;
-      const shared = documentFromHash(location.hash);
-      clearShareHash();
-      if (!shared) {
-        showToast('That share link is invalid', 'error');
-        return;
-      }
-      store.load(shared);
-      saveToStorage(storage, store.snapshot());
-      showToast('Loaded shared scene', 'success');
-    };
-    addEventListener('hashchange', onHashChange);
-
     const media = matchMedia(NARROW_QUERY);
     const onMedia = () => (narrow = media.matches);
     media.addEventListener('change', onMedia);
-
-    // The hash is dropped below, so persist a linked scene now: otherwise a reload without edits
-    // would show the older autosave (or the default) instead of what the link opened.
-    if (boot.source === 'link') saveToStorage(storage, boot.doc);
-    clearShareHash();
-    if (boot.source === 'link') showToast('Loaded shared scene', 'success');
-    else if (boot.invalidLink) showToast('That share link is invalid', 'error');
 
     return () => {
       unsubscribe();
       stopInsets();
       autosave.dispose();
       removeEventListener('pagehide', onPageHide);
-      removeEventListener('hashchange', onHashChange);
       media.removeEventListener('change', onMedia);
       engine.dispose();
     };
@@ -121,7 +143,7 @@
 <svelte:window {onkeydown} />
 
 <Viewport bind:host />
-<Toolbar {store} {narrow} onshare={share} onhelp={() => (helpOpen = true)} />
+<Toolbar {store} {narrow} onopen={actions.open} onsave={actions.save} onhelp={actions.showHelp} />
 {#if narrow}
   <BottomSheet {store} />
 {:else}
