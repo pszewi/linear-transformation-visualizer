@@ -34,6 +34,29 @@ export function eigenClusterTolFor(m: Matrix): number {
 }
 
 /**
+ * Threshold κ for "B is numerically nilpotent", applied to the depressed-cubic coefficients
+ * p = c₁(B) and q = −det(B) of B = (A − (tr/3)·I)/s, where s = max|B_ij| (see
+ * linalg/eigen.ts). A has a triple eigenvalue exactly when B is nilpotent, i.e. p = q = 0, so the
+ * computed |p|, |q| then hold rounding error only:
+ *   - Data error. A stored entry of A is off by ≤ ½ε·max|a_ij| ≤ ½ε·(|shift| + s), so an entry
+ *     of B is off by δ ≤ ½ε·(1 + |shift|/s). For a nilpotent B with |b_ij| ≤ 1, every partial
+ *     derivative of p is ≤ 2 in size, and every cofactor (∂det/∂b_ij) is ≤ 2 as well. So one
+ *     ulp per entry moves p by ≤ 12δ and q by ≤ 18δ, i.e. q by at most 9ε·(1 + |shift|/s).
+ *   - Formation error. Evaluating p and det(B) at unit scale adds a few ε, which the "1 +"
+ *     term covers.
+ * NILPOTENT_SLACK = 32 allows about 3.5 ulps of error per entry from upstream arithmetic, at
+ * worst-case alignment. That covers a matrix built from a couple of products, such as Q·J·Qᵀ.
+ * In tests, rotated or similarity-transformed nilpotent parts reach at most ≈ 6.3 units, while
+ * generic random matrices sit above 1e12 units.
+ */
+export const NILPOTENT_SLACK = 32;
+
+/** κ = NILPOTENT_SLACK · ε · (1 + |shift|/s); see NILPOTENT_SLACK. */
+export function nilpotentTol(shift: number, s: number): number {
+  return NILPOTENT_SLACK * MACHINE_EPS * (1 + Math.abs(shift) / s);
+}
+
+/**
  * Machine epsilon (2⁻⁵²). Used only as the convergence threshold of iterative kernels that
  * should run to full working precision (the Jacobi SVD), never for rank or zero decisions,
  * which use tolFor / eigenClusterTolFor.

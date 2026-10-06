@@ -7,7 +7,7 @@
  * error in λ.
  */
 import type { Complex, EigenResult, EigenSpace } from '../analysis';
-import { eigenClusterTolFor, tolFor } from '../tolerance';
+import { eigenClusterTolFor, nilpotentTol, tolFor } from '../tolerance';
 import { det } from './lu';
 import type { Matrix, Vec } from './matrix';
 import { addScaledIdentity, trace } from './ops';
@@ -30,8 +30,17 @@ export interface RawRoots {
 interface Cluster {
   readonly value: number;
   readonly count: number;
-  /** max − min of the member roots (0 for a simple root). */
+  /**
+   * Bound on |λ_true − value| that the eigenspace rank decision must tolerate: max − min of
+   * the member roots for a clustered root (0 for a simple root), or the backward error of the
+   * numerically nilpotent test for a detected triple root (see roots3).
+   */
   readonly spread: number;
+}
+
+/** The 3×3 case where A − (tr/3)·I is numerically nilpotent: one eigenvalue, multiplicity 3. */
+interface TripleRoot {
+  readonly triple: Cluster;
 }
 
 /**
@@ -48,6 +57,10 @@ interface Cluster {
  *   cubic. The other two roots come from exact deflation (see depressedCubicRoots), which keeps
  *   Σλ = tr exactly and makes a complex pair an exact conjugate.
  *
+ * A triple eigenvalue is detected before any root is computed, by a nilpotency test on the
+ * shifted matrix (see roots3). Its roots would otherwise scatter by ≈ ε^{1/3}·‖A‖ and miss the
+ * cluster tolerance.
+ *
  * A conjugate pair a ± ib whose members are closer than eigenClusterTolFor(A) (2|b| ≤ tol) is
  * treated as the two real roots a ± b. Real roots are then clustered by single linkage (a gap
  * ≤ tol between neighbours) into one eigenvalue with algebraic multiplicity k, valued at the
@@ -63,9 +76,16 @@ export function eigen(m: Matrix): EigenResult {
   }
   const clusterTol = eigenClusterTolFor(m);
   const raw = n === 1 ? { reals: [m.data[0]], pairs: [] } : n === 2 ? roots2(m) : roots3(m);
-  const snapped = snapNearRealPairs(raw, clusterTol);
-  const clusters = clusterReals(snapped.reals, clusterTol);
-  const pairs = [...snapped.pairs].sort((x, y) => y.re - x.re);
+  let clusters: Cluster[];
+  let pairs: Complex[];
+  if ('triple' in raw) {
+    clusters = [raw.triple];
+    pairs = [];
+  } else {
+    const snapped = snapNearRealPairs(raw, clusterTol);
+    clusters = clusterReals(snapped.reals, clusterTol);
+    pairs = [...snapped.pairs].sort((x, y) => y.re - x.re);
+  }
 
   const values: Complex[] = [];
   const spaces: EigenSpace[] = [];
@@ -105,17 +125,42 @@ function roots2(m: Matrix): RawRoots {
   return { reals: [], pairs: [{ re: mid, im: Math.sqrt(-disc) }] };
 }
 
-/** Roots of the 3×3 characteristic polynomial via the scaled, shifted depressed cubic. */
-function roots3(m: Matrix): RawRoots {
+/**
+ * Roots of the 3×3 characteristic polynomial via the scaled, shifted depressed cubic.
+ *
+ * Triple roots. λ is a triple eigenvalue exactly when B = (A − (tr/3)·I)/s is nilpotent, i.e.
+ * p = q = 0. The computed p, q then hold only rounding error, bounded by κ = nilpotentTol(shift,
+ * s) (derived in tolerance.ts). Solving the cubic anyway would scatter the roots by ≈ κ^{1/3}·s,
+ * typically more than eigenClusterTolFor, so a rotated Jordan block would come out as one real
+ * root plus a complex pair. So |p|, |q| ≤ κ returns λ = tr/3 with multiplicity 3. The mean
+ * tr/3 is accurate to rounding, because the trace is perfectly conditioned.
+ *
+ * Normal matrices are never caught by this test. Since max|b_ij| = 1, a symmetric B has
+ * p = −½‖B‖_F² ≤ −½. Only strongly non-normal, near-Jordan B can have tiny p and q, and their
+ * eigenvalues are only determined to ≈ κ^{1/3}·s anyway.
+ *
+ * Spread of the detected triple, used by the eigenspace rank decision (realEigenspace). The
+ * input is treated as a rounding-level perturbation of a matrix A₀ with an exact triple
+ * eigenvalue λ₀. By Weyl's inequality, σ_k(A − λ̂I) differs from σ_k(A₀ − λ₀I) by at most
+ * ‖A − A₀‖₂ + |λ̂ − λ₀|. Both terms are at the backward-error level κ·s = O(ε)·(s + |shift|), not
+ * κ^{1/3}·s. So spread = κ·s, which is far below tolFor. Using κ^{1/3}·s would over-count. For
+ * example, a rotated [[2,1,0],[0,2,1e-6],[0,0,2]] would get geometric multiplicity 2, while the
+ * same matrix unrotated gets 1 (its σ₂ = 1e-6 is a real feature, far above rounding).
+ */
+function roots3(m: Matrix): RawRoots | TripleRoot {
   const shift = trace(m) / 3;
   const b = addScaledIdentity(m, -shift);
   let s = 0;
   for (const x of b.data) s = Math.max(s, Math.abs(x));
-  if (s === 0) return { reals: [shift, shift, shift], pairs: [] };
+  if (s === 0) return { triple: { value: shift, count: 3, spread: 0 } };
   for (let k = 0; k < 9; k++) b.data[k] /= s;
   const e = b.data;
   const p = e[0] * e[4] - e[1] * e[3] + e[0] * e[8] - e[2] * e[6] + e[4] * e[8] - e[5] * e[7];
   const q = -det(b);
+  const kappa = nilpotentTol(shift, s);
+  if (Math.abs(p) <= kappa && Math.abs(q) <= kappa) {
+    return { triple: { value: shift, count: 3, spread: kappa * s } };
+  }
   const mu = depressedCubicRoots(p, q);
   return {
     reals: mu.reals.map((x) => shift + s * x),

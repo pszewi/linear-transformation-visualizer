@@ -315,6 +315,71 @@ describe('eigen: near-repeated roots and the eigenspace tolerance', () => {
   });
 });
 
+describe('eigen: triple roots in a rotated basis (numerically nilpotent shift)', () => {
+  /** Distinct outcomes ("r|c alg/geo" per space) over 500 seeded random rotations Q·D·Qᵀ. */
+  function rotatedOutcomes(d: readonly number[], seed: number): Set<string> {
+    const rng = mulberry32(seed);
+    const seen = new Set<string>();
+    for (let k = 0; k < 500; k++) {
+      const q = randomRotation3(rng);
+      const a = mul(mul(q, matrix(3, 3, d)), transpose(q));
+      const e = analyzeEigen(a);
+      seen.add(
+        e.spaces
+          .map(
+            (s) => `${s.value.im ? 'c' : 'r'}${s.algebraicMultiplicity}/${s.geometricMultiplicity}`,
+          )
+          .join(' '),
+      );
+    }
+    return seen;
+  }
+
+  it('rotated 3×3 Jordan block: one λ with algebraic 3, geometric 1 (all 500)', () => {
+    expect(rotatedOutcomes([2, 1, 0, 0, 2, 1, 0, 0, 2], 5)).toEqual(new Set(['r3/1']));
+    expect(rotatedOutcomes([-700, 3, 0, 0, -700, 0.5, 0, 0, -700], 6)).toEqual(new Set(['r3/1']));
+    expect(rotatedOutcomes([0, 1e-3, 0, 0, 0, 1e-3, 0, 0, 0], 7)).toEqual(new Set(['r3/1']));
+  });
+
+  it('rotated [[2,1,0],[0,2,0],[0,0,2]] and rotated 2I are unchanged', () => {
+    expect(rotatedOutcomes([2, 1, 0, 0, 2, 0, 0, 0, 2], 8)).toEqual(new Set(['r3/2']));
+    expect(rotatedOutcomes([2, 0, 0, 0, 2, 0, 0, 0, 2], 9)).toEqual(new Set(['r3/3']));
+  });
+
+  it('eigenspace uses the backward-error spread, not ε^{1/3}: a 1e-6 superdiagonal still gives geometric 1', () => {
+    const d = [2, 1, 0, 0, 2, 1e-6, 0, 0, 2];
+    expect(rotatedOutcomes(d, 10)).toEqual(new Set(['r3/1']));
+    const e = analyzeEigen(matrix(3, 3, d));
+    expect(e.spaces.map((s) => s.geometricMultiplicity)).toEqual([1]);
+  });
+
+  it('a genuine near-triple with distinct roots is NOT merged: diag(1, 1+1e-4, 1−1e-4)', () => {
+    const d = [1, 0, 0, 0, 1 + 1e-4, 0, 0, 0, 1 - 1e-4];
+    const e = analyzeEigen(matrix(3, 3, d));
+    expect(e.spaces).toHaveLength(3);
+    [1 + 1e-4, 1, 1 - 1e-4].forEach((x, i) => expect(e.values[i].re).toBeCloseTo(x, 12));
+    expect(rotatedOutcomes(d, 11)).toEqual(new Set(['r1/1 r1/1 r1/1']));
+  });
+
+  it('a non-orthogonal similarity of a Jordan block is still detected', () => {
+    const s = fromRows([
+      [2, 1, 0],
+      [1, 3, 1],
+      [0, 1, 1],
+    ]);
+    const j = fromRows([
+      [5, 1, 0],
+      [0, 5, 1],
+      [0, 0, 5],
+    ]);
+    const e = analyzeEigen(mul(mul(s, j), inverse(s)));
+    expect(e.spaces).toHaveLength(1);
+    expect(e.spaces[0].value.re).toBeCloseTo(5, 12);
+    expect(e.spaces[0].algebraicMultiplicity).toBe(3);
+    expect(e.spaces[0].geometricMultiplicity).toBe(1);
+  });
+});
+
 describe('eigen: depressed cubic', () => {
   it('μ³ − 3μ + 2 = (μ − 1)²(μ + 2)', () => {
     const r = depressedCubicRoots(-3, 2).reals.sort((x, y) => x - y);
