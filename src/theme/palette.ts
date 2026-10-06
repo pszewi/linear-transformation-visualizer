@@ -11,7 +11,7 @@ export const scenePalette = {
   gridOriginal: 0x4a4843,
   gridOriginalOpacity: 0.55,
   gridTransformed: 0xd97757,
-  gridTransformedOpacity: 0.75,
+  gridTransformedOpacity: 0.55,
   groundGrid: 0x34332f,
 
   axis: 0x8f8b82,
@@ -20,9 +20,9 @@ export const scenePalette = {
   labelMuted: '#8f8b82',
 
   /** Basis vector colours, index i ↔ e_{i+1}. "before" = original e_i, "after" = A e_i. */
-  basis: [0xe5826c, 0x8fbf7f, 0x8ea4e8] as const,
-  basisBefore: [0x7a4a40, 0x4f6646, 0x4d5a80] as const,
-  basisLabels: ['#e5826c', '#8fbf7f', '#8ea4e8'] as const,
+  basis: [0xef6370, 0x8fbf7f, 0x8ea4e8] as const,
+  basisBefore: [0x7f4048, 0x4f6646, 0x4d5a80] as const,
+  basisLabels: ['#ef6370', '#8fbf7f', '#8ea4e8'] as const,
 
   eigen: 0xe8b75a,
   eigenOpacity: 0.85,
