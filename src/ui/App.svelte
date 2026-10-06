@@ -22,7 +22,7 @@
   } from '../state/persistence';
   import { createStore } from '../state/store.svelte';
   import Toast from './components/Toast.svelte';
-  import { showToast } from './components/toast.svelte';
+  import { showToast } from './components/toastStore.svelte';
   import BottomSheet from './layout/BottomSheet.svelte';
   import { handleShortcut } from './layout/shortcuts';
   import { trackViewInsets } from './lib/viewInsets';

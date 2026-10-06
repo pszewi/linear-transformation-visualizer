@@ -9,8 +9,8 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -19,3 +19,18 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npx vite build
+
+  # macOS and Windows file systems ignore case, so imports that only work on Linux (e.g.
+  # './toast.svelte' next to 'Toast.svelte') must fail here, not in the release build.
+  # Lint/Prettier stay on Linux: Windows checkouts get CRLF line endings.
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
