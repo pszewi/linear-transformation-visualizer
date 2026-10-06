@@ -78,7 +78,9 @@
     </div>
     <span class="image">
       <span class="image-label">A{name}</span>
-      <span class="image-value num" aria-label="Image A{name} = {image}">= {image}</span>
+      <span class="image-value num" title={image} aria-label="Image A{name} = {image}"
+        >= {image}</span
+      >
     </span>
   </div>
 </li>

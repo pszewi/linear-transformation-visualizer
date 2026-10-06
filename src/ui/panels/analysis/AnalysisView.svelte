@@ -31,6 +31,8 @@
   const rows = $derived(analysis.shape.rows);
   const cols = $derived(analysis.shape.cols);
   const measure = $derived(cols === 2 ? 'area' : 'volume');
+  const detText = $derived(formatNumber(analysis.det ?? Number.NaN, 3));
+  const traceText = $derived(formatNumber(analysis.trace ?? Number.NaN, 3));
 </script>
 
 <div class="analysis">
@@ -45,12 +47,15 @@
     <div class="tiles">
       <div class="tile" data-tone={orientationTone[analysis.orientation]}>
         <span class="tile-label">det <i>A</i></span>
-        <span class="tile-value num">{formatNumber(analysis.det, 3)}</span>
+        <span class="tile-value num" class:long={detText.length > 7} title={detText}>{detText}</span
+        >
         <span class="tile-caption">{orientationCaption[analysis.orientation]}</span>
       </div>
       <div class="tile">
         <span class="tile-label">tr <i>A</i></span>
-        <span class="tile-value num">{formatNumber(analysis.trace ?? Number.NaN, 3)}</span>
+        <span class="tile-value num" class:long={traceText.length > 7} title={traceText}
+          >{traceText}</span
+        >
         <span class="tile-caption">Sum of eigenvalues</span>
       </div>
     </div>
@@ -164,6 +169,11 @@
     line-height: var(--leading-tight);
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .tile-value.long {
+    font-size: var(--text-lg);
+    line-height: calc(var(--text-2xl) * var(--leading-tight));
   }
 
   .tile-caption {

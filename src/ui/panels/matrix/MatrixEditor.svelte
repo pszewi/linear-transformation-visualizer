@@ -25,20 +25,16 @@
   <span class="name" aria-hidden="true">{node.label}<span class="eq">=</span></span>
   <div
     class="matrix"
-    role="grid"
+    role="group"
     aria-label="Matrix {node.label}, {rowIdx.length} by {colIdx.length}"
     style:--cols={colIdx.length}
   >
     <span class="bracket left" aria-hidden="true"></span>
     <div class="cells">
       {#each rowIdx as i (i)}
-        <div class="row" role="row">
+        <div class="row">
           {#each colIdx as j (j)}
-            <div
-              class="cell"
-              role="gridcell"
-              class:hl={hover !== null && (hover.i === i || hover.j === j)}
-            >
+            <div class="cell" class:hl={hover !== null && (hover.i === i || hover.j === j)}>
               <ScrubNumber
                 value={node.rows[i][j]}
                 onchange={(v, phase) => store.setEntry(i, j, v, phase)}

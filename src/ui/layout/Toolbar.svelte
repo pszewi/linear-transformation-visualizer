@@ -133,17 +133,14 @@
     padding: 0 var(--space-1) 0 var(--space-2);
   }
 
-  .narrow .title {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-  }
-
+  /* Below 1100px the sidebar leaves no room for the name: keep it for screen readers only. */
   @media (max-width: 1100px) {
-    .title span {
-      display: none;
+    .title {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
     }
   }
 </style>
