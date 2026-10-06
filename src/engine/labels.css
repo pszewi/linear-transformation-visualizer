@@ -1,0 +1,87 @@
+/*
+ * CSS2D label styling for the engine. Uses design tokens from styles/tokens.css only.
+ * The overlay never takes pointer events: the canvas underneath owns all interaction.
+ */
+.ltv-label-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ltv-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  color: var(--color-text-muted);
+  /* A soft halo in the background colour keeps text legible over grid lines. */
+  text-shadow:
+    0 0 3px var(--color-bg),
+    0 0 2px var(--color-bg),
+    0 0 1px var(--color-bg);
+}
+
+/* Tick numbers */
+.ltv-tick {
+  color: var(--color-text-faint);
+  font-size: 10.5px;
+}
+
+.ltv-tick-below {
+  padding-top: 7px;
+}
+
+.ltv-tick-left {
+  padding-right: 7px;
+}
+
+.ltv-tick-corner {
+  padding: 6px 6px 0 0;
+}
+
+/* Axis names: math variables */
+.ltv-axis-name {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  font-style: italic;
+  color: var(--color-text-muted);
+  padding: 2px 4px;
+}
+
+.ltv-axis-name-tinted {
+  /* colour set inline from the scene palette (basis colours) */
+  opacity: 0.75;
+}
+
+/* Basis vector tips (colour set inline from the scene palette) */
+.ltv-basis {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  padding: 5px 7px;
+}
+
+.ltv-basis-before {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+  opacity: 0.55;
+}
+
+/* Eigenvalue tags */
+.ltv-eigen {
+  color: var(--color-eigen);
+  font-size: var(--text-xs);
+  padding: 3px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-glass);
+  text-shadow: none;
+}
+
+/* User vectors (colour set inline from the scene palette) */
+.ltv-object {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  padding: 5px 7px;
+}
