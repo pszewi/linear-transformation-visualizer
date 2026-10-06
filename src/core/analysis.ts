@@ -2,9 +2,13 @@
  * FROZEN CONTRACT — the types in this file are shared by core/, engine/ and ui/.
  * Changing a type here requires the head agent's approval.
  */
+import { eigen as eigenOf, EIGEN_MAX_N } from './linalg/eigen';
+import { det as detOf } from './linalg/lu';
 import type { Matrix, Shape, Vec } from './linalg/matrix';
 import { isSquare } from './linalg/matrix';
 import { trace as traceOf } from './linalg/ops';
+import { columnSpace, nullspace, rref } from './linalg/rref';
+import { tolFor } from './tolerance';
 
 export interface Complex {
   readonly re: number;
@@ -63,44 +67,40 @@ export interface Analysis {
  * Full analysis of `m`. Pure; cheap for n ≤ 3 (called once per matrix change, and once per
  * animation frame by the engine).
  *
- * STUB (head agent): det/trace for 2×2 and 3×3 only, rank guessed from det, no eigen data.
- * The math agent replaces the body with the real implementation.
+ * For any m×n: the numerical rank comes from RREF with partial pivoting under tolFor(m).
+ * Orthonormal kernel and image bases come from the same tolerance, so
+ * kernelBasis.length = nullity = cols − rank and imageBasis.length = rank.
+ * Square matrices also get trace, det (LU), invertible (rank === n, which agrees with
+ * `inverse` not throwing), orientation (sign of det, 'degenerate' when not invertible) and,
+ * for n ≤ 3, eigen data. `eigen` stays undefined for n > 3.
  */
 export function analyze(m: Matrix): Analysis {
   const square = isSquare(m);
   const shape = { rows: m.rows, cols: m.cols };
-  if (!square) {
-    return {
-      shape,
-      square,
-      rank: Math.min(m.rows, m.cols),
-      nullity: 0,
-      kernelBasis: [],
-      imageBasis: [],
-    };
-  }
-  const d = m.data;
-  const det =
-    m.rows === 2
-      ? d[0] * d[3] - d[1] * d[2]
-      : m.rows === 3
-        ? d[0] * (d[4] * d[8] - d[5] * d[7]) -
-          d[1] * (d[3] * d[8] - d[5] * d[6]) +
-          d[2] * (d[3] * d[7] - d[4] * d[6])
-        : NaN;
-  const invertible = Math.abs(det) > 1e-9;
-  const rank = invertible ? m.rows : m.rows - 1;
-  return {
+  const tol = tolFor(m);
+  const rank = rref(m, tol).pivots.length;
+  const base = {
     shape,
     square,
     rank,
     nullity: m.cols - rank,
-    kernelBasis: [],
-    imageBasis: [],
+    kernelBasis: nullspace(m, tol),
+    imageBasis: columnSpace(m, tol),
+  };
+  if (!square) return base;
+  const det = detOf(m);
+  const invertible = rank === m.rows;
+  return {
+    ...base,
     trace: traceOf(m),
     det,
     invertible,
-    orientation: !invertible ? 'degenerate' : det > 0 ? 'preserving' : 'reversing',
-    eigen: { values: [], spaces: [], defective: false },
+    orientation: orientationOf(invertible, det),
+    eigen: m.rows <= EIGEN_MAX_N ? eigenOf(m) : undefined,
   };
+}
+
+function orientationOf(invertible: boolean, det: number): Orientation {
+  if (!invertible) return 'degenerate';
+  return det > 0 ? 'preserving' : 'reversing';
 }
