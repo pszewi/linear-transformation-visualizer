@@ -52,12 +52,27 @@ describe('formatComplex', () => {
   it('covers the forms a, bi, −bi, a + bi, a − bi', () => {
     expect(formatComplex({ re: 2, im: 0 })).toBe('2');
     expect(formatComplex({ re: -2, im: 1e-15 })).toBe(`${M}2`);
-    expect(formatComplex({ re: 0, im: 1 })).toBe('1i');
+    expect(formatComplex({ re: 0, im: 2 })).toBe('2i');
     expect(formatComplex({ re: 1e-14, im: -0.5 })).toBe(`${M}0.5i`);
     expect(formatComplex({ re: 1, im: 2 })).toBe('1 + 2i');
     expect(formatComplex({ re: -1, im: -2.25 })).toBe(`${M}1 ${M} 2.25i`);
     expect(formatComplex({ re: 0, im: 0 })).toBe('0');
     expect(formatComplex({ re: -0, im: -0 })).toBe('0');
+  });
+
+  it('writes a unit imaginary part as a bare i: i, −i, a + i, a − i', () => {
+    expect(formatComplex({ re: 0, im: 1 })).toBe('i');
+    expect(formatComplex({ re: 0, im: -1 })).toBe(`${M}i`);
+    expect(formatComplex({ re: 2, im: 1 })).toBe('2 + i');
+    expect(formatComplex({ re: -2, im: -1 })).toBe(`${M}2 ${M} i`);
+    // Only when |im| DISPLAYS exactly as 1: rounding to 1 counts, 1.5 or 0.999 at 4 digits do not.
+    expect(formatComplex({ re: 0, im: 1.0000001 })).toBe('i');
+    expect(formatComplex({ re: 0, im: 0.9999 }, 4)).toBe('0.9999i');
+    expect(formatComplex({ re: 0, im: 1.5 })).toBe('1.5i');
+    expect(formatComplex({ re: 0, im: 11 })).toBe('11i');
+    expect(complexToLatex({ re: 0, im: -1 })).toBe('-i');
+    expect(complexToLatex({ re: 3, im: -1 })).toBe('3 - i');
+    expect(complexToLatex({ re: 3, im: 1 })).toBe('3 + i');
   });
 
   it('respects `digits` for the zero test of each part', () => {

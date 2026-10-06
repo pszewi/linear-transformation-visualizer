@@ -97,8 +97,9 @@ export function formatNumber(x: number, digits = 3): string {
 
 /**
  * Shared layout of a complex number, "a", "bi", "−bi", "a + bi" or "a − bi", where a part that
- * displays as zero is left out. `num` formats a non-negative or signed real, and `minus` is the
- * sign used between and in front of the terms.
+ * displays as zero is left out. An imaginary part whose magnitude displays exactly as "1" is
+ * written as a bare "i" ("i", "−i", "a + i", "a − i"). `num` formats a non-negative or signed
+ * real, and `minus` is the sign used between and in front of the terms.
  */
 function complexText(
   z: Complex,
@@ -108,12 +109,13 @@ function complexText(
 ): string {
   if (Number.isNaN(z.re) || Number.isNaN(z.im)) return num(NaN);
   if (isDisplayZero(z.im, digits)) return num(z.re);
-  const im = `${num(Math.abs(z.im))}i`;
+  const b = num(Math.abs(z.im));
+  const im = b === '1' ? 'i' : `${b}i`;
   if (isDisplayZero(z.re, digits)) return z.im < 0 ? `${minus}${im}` : im;
   return `${num(z.re)} ${z.im < 0 ? minus : '+'} ${im}`;
 }
 
-/** Plain-text complex: "a", "bi", "a + bi", "a − bi". */
+/** Plain-text complex: "a", "bi", "a + bi", "a − bi" (a unit imaginary part is just "i"). */
 export function formatComplex(z: Complex, digits = 3): string {
   return complexText(z, digits, (x) => formatNumber(x, digits), MINUS);
 }
