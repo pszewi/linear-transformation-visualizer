@@ -31,6 +31,8 @@ export const scenePalette = {
   areaPositive: 0xd97757,
   areaNegative: 0xc9607e,
   areaOpacity: 0.16,
+  /** Per-face opacity of the 3D parallelepiped: up to ~4 faces overlap on screen. */
+  areaOpacity3d: 0.07,
 
   /** User object colours keyed by SceneObject.colorKey; [original, image]. */
   objects: {

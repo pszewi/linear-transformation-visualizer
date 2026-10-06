@@ -18,6 +18,7 @@
   import { showToast } from './components/toast.svelte';
   import BottomSheet from './layout/BottomSheet.svelte';
   import { handleShortcut } from './layout/shortcuts';
+  import { trackViewInsets } from './lib/viewInsets';
   import ShortcutsDialog from './layout/ShortcutsDialog.svelte';
   import Sidebar from './layout/Sidebar.svelte';
   import Toolbar from './layout/Toolbar.svelte';
@@ -71,6 +72,9 @@
     engine.dispatch({ type: 'view', view: doc.view });
     engine.dispatch({ type: 'objects', objects: doc.objects });
     const unsubscribe = store.subscribe((event) => engine.dispatch(event));
+    const stopInsets = host.parentElement
+      ? trackViewInsets(host.parentElement, (insets) => engine.setViewInsets(insets))
+      : () => {};
 
     const autosave = createAutosave(store, storage);
     const onPageHide = () => autosave.flush();
@@ -99,6 +103,7 @@
 
     return () => {
       unsubscribe();
+      stopInsets();
       autosave.dispose();
       removeEventListener('pagehide', onPageHide);
       removeEventListener('hashchange', onHashChange);

@@ -41,7 +41,7 @@
   }
 </script>
 
-<aside class="sidebar glass" class:collapsed aria-label="Inspector">
+<aside class="sidebar glass" class:collapsed aria-label="Inspector" data-occludes="right">
   {#if collapsed}
     <div class="rail" in:fade={{ duration }}>
       <IconButton

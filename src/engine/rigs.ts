@@ -6,13 +6,15 @@
 import { MOUSE, OrthographicCamera, PerspectiveCamera, TOUCH, Vector3 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { easeInOutCubic } from './Animator';
+import type { ViewInsets } from './types';
 
 export const RESET_MS = 600;
 
 export interface CameraRig {
   readonly camera: OrthographicCamera | PerspectiveCamera;
   readonly controls: OrbitControls;
-  resize(width: number, height: number): void;
+  /** Fit the full canvas size, centring the scene in the area not covered by `insets`. */
+  resize(width: number, height: number, insets: ViewInsets): void;
   /** Advance the reset tween / damping. Returns true while the view is still moving. */
   update(now: number): boolean;
   /** Return to the home view (smoothly unless `animate` is false). */
@@ -23,6 +25,26 @@ export interface CameraRig {
 export interface RigOptions {
   readonly onChange: () => void;
   readonly reducedMotion: () => boolean;
+}
+
+export const NO_INSETS: ViewInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+
+/**
+ * Shift the projection so the world origin lands in the centre of the uncovered rectangle:
+ * a view offset of ((r − l)/2, (b − t)/2) moves the image left/up by that many pixels.
+ * Also refreshes the projection matrix.
+ */
+function applyInsets(
+  camera: OrthographicCamera | PerspectiveCamera,
+  width: number,
+  height: number,
+  insets: ViewInsets,
+): void {
+  const dx = (insets.right - insets.left) / 2;
+  const dy = (insets.bottom - insets.top) / 2;
+  if (dx === 0 && dy === 0) camera.clearViewOffset();
+  else camera.setViewOffset(width, height, dx, dy, width, height);
+  camera.updateProjectionMatrix();
 }
 
 /** Shared tween bookkeeping for a reset. */
@@ -80,14 +102,14 @@ export class CameraRig2D implements CameraRig {
     this.tween.active = false;
   };
 
-  resize(width: number, height: number): void {
+  resize(width: number, height: number, insets: ViewInsets): void {
     const aspect = width / Math.max(1, height);
     const c = this.camera;
     c.top = HALF_HEIGHT_2D;
     c.bottom = -HALF_HEIGHT_2D;
     c.left = -HALF_HEIGHT_2D * aspect;
     c.right = HALF_HEIGHT_2D * aspect;
-    c.updateProjectionMatrix();
+    applyInsets(c, width, height, insets);
   }
 
   reset(animate: boolean): void {
@@ -193,9 +215,9 @@ export class CameraRig3D implements CameraRig {
     this.tween.active = false;
   };
 
-  resize(width: number, height: number): void {
+  resize(width: number, height: number, insets: ViewInsets): void {
     this.camera.aspect = width / Math.max(1, height);
-    this.camera.updateProjectionMatrix();
+    applyInsets(this.camera, width, height, insets);
   }
 
   reset(animate: boolean): void {

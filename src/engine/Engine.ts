@@ -37,8 +37,8 @@ import { Animator } from './Animator';
 import { debugEnabled, type LtvDebug } from './debug';
 import { embedMatrix4 } from './embed';
 import { createLayers } from './layers/registry';
-import { type CameraRig, CameraRig2D, CameraRig3D } from './rigs';
-import type { Dim, EngineHandle, FrameState, Layer } from './types';
+import { type CameraRig, CameraRig2D, CameraRig3D, NO_INSETS } from './rigs';
+import type { Dim, EngineHandle, FrameState, Layer, ViewInsets } from './types';
 import './labels.css';
 
 export interface EngineOptions {
@@ -113,6 +113,7 @@ export class Engine implements EngineHandle {
   private layers: LayerEntry[] = [];
   private layersDim: Dim | null = null;
   private readonly resolution = new Vector2(1, 1);
+  private insets: ViewInsets = NO_INSETS;
   private sized = false;
   private contextLost = false;
   private resizeObserver: ResizeObserver | null = null;
@@ -209,6 +210,22 @@ export class Engine implements EngineHandle {
         this.playSteps(event.steps);
         break;
     }
+  }
+
+  setViewInsets(insets: ViewInsets): void {
+    const a = this.insets;
+    if (
+      a.top === insets.top &&
+      a.right === insets.right &&
+      a.bottom === insets.bottom &&
+      a.left === insets.left
+    ) {
+      return;
+    }
+    this.insets = { ...insets };
+    if (!this.sized || !this.rig) return;
+    this.rig.resize(this.resolution.x, this.resolution.y, this.insets);
+    this.requestRender();
   }
 
   dispose(): void {
@@ -323,7 +340,7 @@ export class Engine implements EngineHandle {
         this.dim === 2
           ? new CameraRig2D(renderer.domElement, opts)
           : new CameraRig3D(renderer.domElement, opts);
-      if (this.sized) this.rig.resize(this.resolution.x, this.resolution.y);
+      if (this.sized) this.rig.resize(this.resolution.x, this.resolution.y, this.insets);
     }
     if (this.layersDim === this.dim) return;
     this.disposeLayers();
@@ -451,7 +468,7 @@ export class Engine implements EngineHandle {
     this.labelRenderer?.setSize(w, h);
     this.resolution.set(w, h);
     this.sized = true;
-    this.rig?.resize(w, h);
+    this.rig?.resize(w, h, this.insets);
     for (const e of this.layers) e.layer.resize?.(w, h);
     // Render synchronously: a resized canvas is cleared, and waiting a frame would flash.
     this.needsRender = true;

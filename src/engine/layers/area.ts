@@ -40,7 +40,7 @@ export class AreaLayer extends BaseLayer {
       new MeshBasicMaterial({
         color: p.areaPositive,
         transparent: true,
-        opacity: p.areaOpacity,
+        opacity: depth ? p.areaOpacity3d : p.areaOpacity,
         depthTest: depth,
         depthWrite: false,
         side: DoubleSide,
@@ -91,7 +91,7 @@ export class AreaLayer extends BaseLayer {
     const mat = this.fillMaterial;
     if (mat) {
       mat.color.setHex(color);
-      mat.opacity = p.areaOpacity * strength;
+      mat.opacity = (this.ctx.dim === 3 ? p.areaOpacity3d : p.areaOpacity) * strength;
     }
     if (this.square) {
       this.square.visible = planarDomain && strength > 0;

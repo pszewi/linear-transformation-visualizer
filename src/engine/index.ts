@@ -4,7 +4,7 @@
 import { Engine, type EngineOptions } from './Engine';
 import type { EngineHandle } from './types';
 
-export type { EngineHandle } from './types';
+export type { EngineHandle, ViewInsets } from './types';
 export type { EngineOptions } from './Engine';
 
 export function createEngine(options?: EngineOptions): EngineHandle {

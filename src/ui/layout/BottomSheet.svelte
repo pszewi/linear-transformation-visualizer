@@ -75,6 +75,7 @@
 
 <section
   class="sheet glass"
+  data-occludes="bottom"
   class:dragging={dragH !== null}
   style:height="{height}px"
   aria-label="Inspector"

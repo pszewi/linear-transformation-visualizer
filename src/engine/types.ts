@@ -59,10 +59,23 @@ export interface Layer {
 
 export type LayerFactory = () => Layer;
 
+/**
+ * Screen-space margins (CSS px) covered by floating UI (sidebar, bottom sheet). The canvas stays
+ * full-bleed, but the camera centres the scene in the uncovered rectangle.
+ */
+export interface ViewInsets {
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly left: number;
+}
+
 /** Public handle used by App. The only engine export ui/ may import (via engine/index.ts). */
 export interface EngineHandle {
   /** Attach the canvas to `container` and start the (on-demand) loop. */
   mount(container: HTMLElement): void;
   dispatch(event: SceneEvent): void;
+  /** Re-centre the view in the area not covered by floating UI. Cheap; call on every change. */
+  setViewInsets(insets: ViewInsets): void;
   dispose(): void;
 }
