@@ -32,3 +32,10 @@ export function tolFor(m: Matrix): number {
 export function eigenClusterTolFor(m: Matrix): number {
   return 1e-6 * Math.max(1, normInf(m));
 }
+
+/**
+ * Machine epsilon (2⁻⁵²). Used only as the convergence threshold of iterative kernels that
+ * should run to full working precision (the Jacobi SVD), never for rank or zero decisions,
+ * which use tolFor / eigenClusterTolFor.
+ */
+export const MACHINE_EPS = Number.EPSILON;
