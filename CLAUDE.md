@@ -38,7 +38,8 @@ and why, instead of working around it.
   (e.g. ‖Av − λv‖, Σλ = tr A, Πλ = det A), not by restating the implementation.
 - Before committing: `npm run check && npx eslint . && npx prettier --check . && npm test`
   must all pass; `npx vite build` must succeed.
-- Commit messages: imperative mood, explain _why_. No model identifiers in commits or code.
+- Commit messages: imperative mood, explain _why_. No model names or IDs in code, comments or
+  commit bodies; the standard `Co-Authored-By` attribution trailer is the one allowed exception.
 
 ## Commands
 

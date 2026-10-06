@@ -18,6 +18,11 @@ export interface LayerContext {
   readonly palette: ScenePalette;
   /** Drawing-buffer size in CSS px, kept current; needed by LineMaterial.resolution. */
   readonly resolution: THREE.Vector2;
+  /**
+   * Effective (clamped) margins covered by floating UI, kept current. Edge-pinned 2D labels
+   * should stay inside the uncovered rectangle; see primitives/screen.ts `visibleRect2D`.
+   */
+  readonly insets: Readonly<ViewInsets>;
   /** Ask for a render on the next frame (render-on-demand). */
   requestRender(): void;
 }

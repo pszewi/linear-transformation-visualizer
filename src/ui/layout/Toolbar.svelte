@@ -23,7 +23,7 @@
   ];
 </script>
 
-<header class="toolbar glass" class:narrow>
+<header class="toolbar glass" class:narrow data-occludes={narrow ? 'top' : 'none'}>
   <div class="brand">
     <AppMark />
     <h1 class="title">Linear Transformation <span>Visualizer</span></h1>

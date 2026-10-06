@@ -11,6 +11,8 @@ import {
   type WebGLRenderer,
 } from 'three';
 
+import type { ViewInsets } from '../types';
+
 const _size = new Vector2();
 const _v = new Vector3();
 const _a = new Vector3();
@@ -65,4 +67,38 @@ export function screenDirection(
 export function labelCenterFor(sx: number, sy: number, out: Vector2): Vector2 {
   const m = Math.max(Math.abs(sx), Math.abs(sy)) || 1;
   return out.set(0.5 - (0.5 * sx) / m, 0.5 + (0.5 * sy) / m);
+}
+
+/** Axis-aligned world rectangle (2D, z = 0 plane). */
+export interface Rect2D {
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+}
+
+/**
+ * The world-space rectangle visible in the area NOT covered by floating UI, for a 2D
+ * orthographic view. Computed by unprojecting the NDC corners of the uncovered rectangle, so it
+ * is exact under any zoom, pan or camera view offset (the engine shifts the projection by the
+ * insets). Writes into `out`; never allocates.
+ */
+export function visibleRect2D(
+  camera: OrthographicCamera,
+  renderer: WebGLRenderer,
+  insets: Readonly<ViewInsets>,
+  out: Rect2D,
+): Rect2D {
+  viewportSize(renderer, _size);
+  const nx0 = -1 + (2 * insets.left) / _size.x;
+  const nx1 = 1 - (2 * insets.right) / _size.x;
+  const ny0 = -1 + (2 * insets.bottom) / _size.y;
+  const ny1 = 1 - (2 * insets.top) / _size.y;
+  _a.set(nx0, ny0, 0).unproject(camera);
+  _b.set(nx1, ny1, 0).unproject(camera);
+  out.x0 = Math.min(_a.x, _b.x);
+  out.x1 = Math.max(_a.x, _b.x);
+  out.y0 = Math.min(_a.y, _b.y);
+  out.y1 = Math.max(_a.y, _b.y);
+  return out;
 }

@@ -40,7 +40,7 @@ export class AreaLayer extends BaseLayer {
       new MeshBasicMaterial({
         color: p.areaPositive,
         transparent: true,
-        opacity: depth ? p.areaOpacity3d : p.areaOpacity,
+        opacity: 0, // set per update: depends on which geometry (square / cube) is shown
         depthTest: depth,
         depthWrite: false,
         side: DoubleSide,
@@ -91,7 +91,8 @@ export class AreaLayer extends BaseLayer {
     const mat = this.fillMaterial;
     if (mat) {
       mat.color.setHex(color);
-      mat.opacity = (this.ctx.dim === 3 ? p.areaOpacity3d : p.areaOpacity) * strength;
+      // A lone parallelogram (2D, or a 3×2 map) vs. a parallelepiped whose faces overlap.
+      mat.opacity = (planarDomain ? p.areaOpacity : p.areaOpacity3d) * strength;
     }
     if (this.square) {
       this.square.visible = planarDomain && strength > 0;

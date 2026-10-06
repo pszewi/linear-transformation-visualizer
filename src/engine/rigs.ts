@@ -29,10 +29,40 @@ export interface RigOptions {
 
 export const NO_INSETS: ViewInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 
+/** Fraction of each canvas axis that always stays uncovered, however large the occluders. */
+const MIN_UNCOVERED = 0.4;
+
+/**
+ * Clamp raw occluder insets so at least MIN_UNCOVERED of each axis stays visible (a bottom
+ * sheet dragged to full height must not push the origin under the toolbar). Writes into `out`.
+ */
+export function clampInsets(
+  width: number,
+  height: number,
+  raw: ViewInsets,
+  out: { top: number; right: number; bottom: number; left: number },
+): typeof out {
+  const fit = (a: number, b: number, size: number): [number, number] => {
+    a = Math.max(0, a);
+    b = Math.max(0, b);
+    const max = size * (1 - MIN_UNCOVERED);
+    const k = a + b > max ? max / (a + b) : 1;
+    return [a * k, b * k];
+  };
+  [out.left, out.right] = fit(raw.left, raw.right, width);
+  [out.top, out.bottom] = fit(raw.top, raw.bottom, height);
+  return out;
+}
+
+/** Uncovered height as a fraction of the canvas height (0 < f ≤ 1). */
+function uncoveredHeight(height: number, insets: ViewInsets): number {
+  return Math.max(MIN_UNCOVERED, (height - insets.top - insets.bottom) / Math.max(1, height));
+}
+
 /**
  * Shift the projection so the world origin lands in the centre of the uncovered rectangle:
  * a view offset of ((r − l)/2, (b − t)/2) moves the image left/up by that many pixels.
- * Also refreshes the projection matrix.
+ * `insets` must already be clamped (clampInsets). Also refreshes the projection matrix.
  */
 function applyInsets(
   camera: OrthographicCamera | PerspectiveCamera,
@@ -105,10 +135,12 @@ export class CameraRig2D implements CameraRig {
   resize(width: number, height: number, insets: ViewInsets): void {
     const aspect = width / Math.max(1, height);
     const c = this.camera;
-    c.top = HALF_HEIGHT_2D;
-    c.bottom = -HALF_HEIGHT_2D;
-    c.left = -HALF_HEIGHT_2D * aspect;
-    c.right = HALF_HEIGHT_2D * aspect;
+    // The home extent ±HALF_HEIGHT_2D fits the UNCOVERED height, not the whole canvas.
+    const half = HALF_HEIGHT_2D / uncoveredHeight(height, insets);
+    c.top = half;
+    c.bottom = -half;
+    c.left = -half * aspect;
+    c.right = half * aspect;
     applyInsets(c, width, height, insets);
   }
 
@@ -217,6 +249,9 @@ export class CameraRig3D implements CameraRig {
 
   resize(width: number, height: number, insets: ViewInsets): void {
     this.camera.aspect = width / Math.max(1, height);
+    // Perspective zoom narrows the field of view; shrink so the home view fits the uncovered
+    // height (OrbitControls dollies by distance and never touches zoom).
+    this.camera.zoom = uncoveredHeight(height, insets);
     applyInsets(this.camera, width, height, insets);
   }
 

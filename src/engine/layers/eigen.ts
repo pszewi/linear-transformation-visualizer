@@ -22,7 +22,7 @@ import { formatNumber } from '../../core/format';
 import type { FrameState, LayerContext } from '../types';
 import type { Label } from '../primitives/Label';
 import { HookedMesh, type Segments, staticSegments } from '../primitives/lines';
-import { labelCenterFor, worldPerPixel } from '../primitives/screen';
+import { labelCenterFor, type Rect2D, visibleRect2D, worldPerPixel } from '../primitives/screen';
 import { ORDER } from '../renderOrder';
 import { BaseLayer } from './BaseLayer';
 
@@ -34,6 +34,7 @@ const LABEL_INSET_PX = 28;
 const LABEL_BACKOFF_PX = 70;
 
 const _origin = new Vector3();
+const _rect: Rect2D = { x0: 0, x1: 0, y0: 0, y1: 0 };
 const _a = new Vector3();
 const _b = new Vector3();
 const _n = new Vector3();
@@ -230,10 +231,11 @@ export class EigenLayer extends BaseLayer {
       // Clip the line against the (inset) view rectangle; put the label near where it exits.
       const d = slot.dir;
       const inset = LABEL_INSET_PX * wpp;
-      const x0 = camera.position.x + camera.left / camera.zoom + inset;
-      const x1 = camera.position.x + camera.right / camera.zoom - inset;
-      const y0 = camera.position.y + camera.bottom / camera.zoom + inset;
-      const y1 = camera.position.y + camera.top / camera.zoom - inset;
+      const r = visibleRect2D(camera, renderer, this.ctx.insets, _rect);
+      const x0 = r.x0 + inset;
+      const x1 = r.x1 - inset;
+      const y0 = r.y0 + inset;
+      const y1 = r.y1 - inset;
       let tMin = -Infinity;
       let tMax = Infinity;
       if (Math.abs(d.x) > 1e-9) {

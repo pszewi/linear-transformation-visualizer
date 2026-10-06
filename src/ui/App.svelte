@@ -73,7 +73,7 @@
     engine.dispatch({ type: 'objects', objects: doc.objects });
     const unsubscribe = store.subscribe((event) => engine.dispatch(event));
     const stopInsets = host.parentElement
-      ? trackViewInsets(host.parentElement, (insets) => engine.setViewInsets(insets))
+      ? trackViewInsets(host.parentElement, host, (insets) => engine.setViewInsets(insets))
       : () => {};
 
     const autosave = createAutosave(store, storage);

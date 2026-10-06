@@ -10,7 +10,7 @@ import { formatNumber } from '../../core/format';
 import type { FrameState, LayerContext } from '../types';
 import type { Label } from '../primitives/Label';
 import { type Segments, staticSegments } from '../primitives/lines';
-import { worldPerPixel } from '../primitives/screen';
+import { type Rect2D, visibleRect2D, worldPerPixel } from '../primitives/screen';
 import { ORDER } from '../renderOrder';
 import { BaseLayer } from './BaseLayer';
 import { GRID_2D_RANGE } from './grid';
@@ -23,6 +23,7 @@ const TICK_PX = 4;
 const LABEL_SPACING_PX = 34;
 const STEPS = [1, 2, 5, 10, 20, 50] as const;
 
+const _rect: Rect2D = { x0: 0, x1: 0, y0: 0, y1: 0 };
 const _origin = new Vector3();
 
 interface TickLabel {
@@ -108,10 +109,13 @@ export class AxesLayer extends BaseLayer {
   private readonly layout2D = (renderer: WebGLRenderer, camera: Camera): void => {
     if (!(camera instanceof OrthographicCamera)) return;
     const wpp = worldPerPixel(camera, renderer, _origin);
-    const left = camera.position.x + camera.left / camera.zoom;
-    const right = camera.position.x + camera.right / camera.zoom;
-    const bottom = camera.position.y + camera.bottom / camera.zoom;
-    const top = camera.position.y + camera.top / camera.zoom;
+    // Clamp against the area not covered by the inspector (and correct under view offsets).
+    const {
+      x0: left,
+      x1: right,
+      y0: bottom,
+      y1: top,
+    } = visibleRect2D(camera, renderer, this.ctx.insets, _rect);
 
     const tick = TICK_PX * wpp;
     if (this.xTicks) {

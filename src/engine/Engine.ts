@@ -37,7 +37,7 @@ import { Animator } from './Animator';
 import { debugEnabled, type LtvDebug } from './debug';
 import { embedMatrix4 } from './embed';
 import { createLayers } from './layers/registry';
-import { type CameraRig, CameraRig2D, CameraRig3D, NO_INSETS } from './rigs';
+import { type CameraRig, CameraRig2D, CameraRig3D, clampInsets, NO_INSETS } from './rigs';
 import type { Dim, EngineHandle, FrameState, Layer, ViewInsets } from './types';
 import './labels.css';
 
@@ -113,7 +113,10 @@ export class Engine implements EngineHandle {
   private layers: LayerEntry[] = [];
   private layersDim: Dim | null = null;
   private readonly resolution = new Vector2(1, 1);
-  private insets: ViewInsets = NO_INSETS;
+  /** Insets as reported by the UI. */
+  private rawInsets: ViewInsets = NO_INSETS;
+  /** Clamped insets for the current size; shared live with layers via LayerContext. */
+  private readonly insets = { ...NO_INSETS };
   private sized = false;
   private contextLost = false;
   private resizeObserver: ResizeObserver | null = null;
@@ -213,7 +216,7 @@ export class Engine implements EngineHandle {
   }
 
   setViewInsets(insets: ViewInsets): void {
-    const a = this.insets;
+    const a = this.rawInsets;
     if (
       a.top === insets.top &&
       a.right === insets.right &&
@@ -222,8 +225,9 @@ export class Engine implements EngineHandle {
     ) {
       return;
     }
-    this.insets = { ...insets };
+    this.rawInsets = { ...insets };
     if (!this.sized || !this.rig) return;
+    clampInsets(this.resolution.x, this.resolution.y, this.rawInsets, this.insets);
     this.rig.resize(this.resolution.x, this.resolution.y, this.insets);
     this.requestRender();
   }
@@ -355,6 +359,7 @@ export class Engine implements EngineHandle {
         root,
         palette: scenePalette,
         resolution: this.resolution,
+        insets: this.insets,
         requestRender: this.requestRender,
       });
       const visible = layerVisible(this.view.layers, layer.id);
@@ -467,6 +472,7 @@ export class Engine implements EngineHandle {
     r.setSize(w, h, false);
     this.labelRenderer?.setSize(w, h);
     this.resolution.set(w, h);
+    clampInsets(w, h, this.rawInsets, this.insets);
     this.sized = true;
     this.rig?.resize(w, h, this.insets);
     for (const e of this.layers) e.layer.resize?.(w, h);
