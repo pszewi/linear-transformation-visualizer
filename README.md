@@ -1,6 +1,6 @@
 # Linear Transformation Visualizer
 
-A browser-based interactive tool for visualising the geometric effect of linear transformations defined by user-supplied matrices. Inspired by tools like 3Blue1Brown's *Essence of Linear Algebra* series and Desmos. 
+A browser-based interactive tool for visualising the geometric effect of linear transformations defined by user-supplied matrices. Inspired by tools like 3Blue1Brown's _Essence of Linear Algebra_ series and Desmos.
 
 ## Example image
 
@@ -33,12 +33,12 @@ A browser-based interactive tool for visualising the geometric effect of linear 
 
 ## Stack
 
-| Concern | Library |
-|---|---|
-| Bundler | [Vite](https://vitejs.dev/) |
-| Language | TypeScript (strict) |
-| 3D rendering | [Three.js](https://threejs.org/) |
-| Controls UI | [lil-gui](https://lil-gui.georgealways.com/) |
+| Concern      | Library                                      |
+| ------------ | -------------------------------------------- |
+| Bundler      | [Vite](https://vitejs.dev/)                  |
+| Language     | TypeScript (strict)                          |
+| 3D rendering | [Three.js](https://threejs.org/)             |
+| Controls UI  | [lil-gui](https://lil-gui.georgealways.com/) |
 
 No framework (React/Vue/etc.) — plain TypeScript modules only. Runs entirely in the browser with no backend.
 
@@ -103,9 +103,9 @@ Pure functions, no side-effects.
 
 ## Keyboard / mouse controls (3D mode)
 
-| Action | Control |
-|---|---|
-| Orbit | Left-click + drag |
-| Pan | Right-click + drag |
-| Zoom | Scroll wheel |
-| Reset view | — (refresh page) |
+| Action     | Control            |
+| ---------- | ------------------ |
+| Orbit      | Left-click + drag  |
+| Pan        | Right-click + drag |
+| Zoom       | Scroll wheel       |
+| Reset view | — (refresh page)   |
