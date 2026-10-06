@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Source for `npx tauri icon src-tauri/app-icon.svg`: the in-app mark (unit square and its
+       image under a shear) on a graphite tile with the standard macOS icon margin. -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#262624"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="none" stroke="#3a3935" stroke-width="6"/>
+  <g transform="translate(100 100) scale(29.43)">
+    <path d="M7 21V12h9v9Z" fill="none" stroke="#75726b" stroke-width="1.1" stroke-dasharray="1.6 1.6"/>
+    <path d="M7 21l5-12h10l-5 12Z" fill="#d97757" fill-opacity="0.22" stroke="#d97757" stroke-width="1.5" stroke-linejoin="round"/>
+    <circle cx="7" cy="21" r="1.5" fill="#ecebe6"/>
+  </g>
+</svg>

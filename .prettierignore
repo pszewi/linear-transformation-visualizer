@@ -1,0 +1,9 @@
+dist
+node_modules
+package-lock.json
+test-results
+playwright-report
+*.png
+.claude
+src-tauri/target
+src-tauri/gen

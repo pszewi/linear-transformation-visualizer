@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Engine playground</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--color-bg);
+        color: var(--color-text);
+        font-family: var(--font-sans);
+      }
+      #viewport {
+        position: fixed;
+        inset: 0;
+      }
+      #strip {
+        position: fixed;
+        top: var(--space-2);
+        left: var(--space-2);
+        right: var(--space-2);
+        z-index: 1;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-1) var(--space-2);
+        padding: var(--space-2);
+        border-radius: var(--radius-md);
+        background: var(--color-surface-glass);
+        font-size: var(--text-xs);
+      }
+      #strip fieldset {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-1);
+        align-items: center;
+        margin: 0;
+        padding: 0 var(--space-2) 0 0;
+        border: 0;
+        border-right: 1px solid var(--color-border);
+      }
+      #strip legend {
+        float: left;
+        margin-right: var(--space-1);
+        color: var(--color-text-faint);
+      }
+      #strip button,
+      #strip select {
+        font: inherit;
+        color: var(--color-text);
+        background: var(--color-surface-2);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xs);
+        padding: 2px 8px;
+        cursor: pointer;
+      }
+      #strip button:hover {
+        background: var(--color-surface-3);
+      }
+      #strip button:focus-visible,
+      #strip select:focus-visible,
+      #strip input:focus-visible {
+        outline: 2px solid var(--color-focus-ring);
+        outline-offset: 1px;
+      }
+      #status {
+        font-family: var(--font-mono);
+        color: var(--color-text-muted);
+        white-space: pre;
+      }
+      body.bare #strip {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="viewport"></div>
+    <div id="strip" role="toolbar" aria-label="Engine playground controls"></div>
+    <script type="module" src="./engine-playground.ts"></script>
+  </body>
+</html>
